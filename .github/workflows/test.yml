@@ -38,7 +38,9 @@ jobs:
 
       - run: echo "`ls -la ${GITHUB_WORKSPACE}`"
 
-      - run: coverage report
+      - name: Coverage in shell
+        run: coverage report
+        working-directory: panduza-py
 
       - name: Execute tests
         run: behave -f html -o acceptance/report/test.html
