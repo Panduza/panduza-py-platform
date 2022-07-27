@@ -33,7 +33,7 @@ jobs:
         run: behave
         working-directory: panduza-py
         env:
-          PYTHONPATH: "."
+          PYTHONPATH: ".."
           COVERAGE_PROCESS_START: "/__w/panduza-py-platform/panduza-py-platform/.coveragerc"
 
       - run: echo "`ls -la ${GITHUB_WORKSPACE}`"
@@ -41,19 +41,21 @@ jobs:
       - run: coverage report
 
       - name: Execute tests
-        run: behave -f html -o test_reports/test.html
+        run: behave -f html -o acceptance/report/test.html
         working-directory: panduza-py
         env:
-          PYTHONPATH: "."
+          PYTHONPATH: ".."
           COVERAGE_PROCESS_START: "/__w/panduza-py-platform/panduza-py-platform/.coveragerc"
-        
-      - run: coverage html -d test_reports/coverage
+      
+      - name: Coverage
+        run: coverage html -d acceptance/report/coverage
+        working-directory: panduza-py
 
       - uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: test_reports
-          path: test_reports
+          name: acceptance-report
+          path: acceptance/report
 
       - run: echo "🎉 Test finished !"
 
