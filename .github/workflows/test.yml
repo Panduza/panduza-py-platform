@@ -2,7 +2,7 @@ name: Action to test the Python client
 on: [push]
 
 env:
-  PANDUZA_PY_BRANCH: acceptance_integration
+  PANDUZA_PY_BRANCH: main
 
 jobs:
   Tests:
