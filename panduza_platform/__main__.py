@@ -20,5 +20,9 @@ args = parser.parse_args()
 srv = Platform()
 if args.tree != None:
     srv.load_tree_overide(args.tree)
+
 srv.run()
 logging.warning("Platform stopped !")
+
+
+

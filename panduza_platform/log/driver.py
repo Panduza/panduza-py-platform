@@ -76,6 +76,8 @@ class DriverFormatter(logging.Formatter):
 
 # =============================================================================
 
+ALREADY_CONFIGURED = []
+
 def driver_logger(driver_name):
     """Logger for platform drivers
     """
@@ -85,8 +87,11 @@ def driver_logger(driver_name):
     ch.setFormatter(DriverFormatter())
 
     __logger = logging.getLogger(driver_name)
-    __logger.setLevel(logging.DEBUG)
-    __logger.addHandler(ch)
+    if driver_name not in ALREADY_CONFIGURED:
+        __logger.setLevel(logging.DEBUG)
+        __logger.addHandler(ch)
+
+    ALREADY_CONFIGURED.append(driver_name)
 
     return __logger
 

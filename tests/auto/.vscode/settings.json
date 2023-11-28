@@ -1,6 +1,0 @@
-{
-    "robot.pythonpath": [
-        "${workspaceFolder}",
-        "${workspaceFolder}/benches/virtual"
-    ]
-}

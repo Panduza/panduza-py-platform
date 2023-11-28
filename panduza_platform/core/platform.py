@@ -138,17 +138,30 @@ class Platform:
 
     # ---
 
-    async def unmount_client(self, name):
+    async def unmount_client(self, name, remove=True):
         self.log.info(f"Unmount client '{name}'")
         self.clients[name].stop()
-        self.clients.remove(name)
+        if remove:
+            self.clients.remove(name)
 
     # ---
 
     async def unmount_all_clients(self, force=False):
+        """Unmount all clients
+        """
+        # Prepare the remove list
+        remove_list = []
+
+        # Unmount clients
         for client in self.clients:
-            if force or (not client.keep_mounted):
-                await self.unmount_client(client)
+            do_action = bool(force or (not client.keep_mounted))
+            if do_action:
+                await self.unmount_client(client, remove=False)
+                remove_list.append(client)
+
+        # Remove client from the management list
+        for client in self.clients:
+            self.clients.remove(client)
 
     # ---
 
@@ -169,23 +182,37 @@ class Platform:
 
     # ---
 
-    async def unmount_device(self, device):
-        self.log.info(f"Unmount device {device}")
+    async def unmount_device(self, device, remove=True):
+        """Unmount the device by unmounting each interfaces
+        """
+        self.log.warning(f"Unmount device '{device.get_name()}'")
         await device.unmount_interfaces()
-        self.devices.remove(device)
+        if remove:
+            self.devices.remove(device)
 
     # ---
 
     async def unmount_all_devices(self, force=False):
-        self.log.warning(self.devices)
+        """Unmount all device managed by the platform
+
+        Some device are protected because they always need to be up.
+        The force argument allow the system to unmount those devices and stop the platform.
+        """
+        # Prepare the remove list
+        remove_list = []
+
+        # Unmount devices
         for device in self.devices:
-            print("PAFF ")
-            if force or (not device.keep_mounted):
-                print("!!!!!!!!!!! ", device)
-                await self.unmount_device(device)
-            else:
-                print("??????????? NOOO ", device)
-        print("ENNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNND")
+            do_action = bool(force or (not device.keep_mounted))
+            if do_action:
+                await self.unmount_device(device, False)
+                remove_list.append(device)
+            # else:
+            #     self.log.warning(f"DO NOT unmount device {device.get_name()}")
+
+        # Remove unmounted device from the managed device list of the platform
+        for device in remove_list:
+            self.devices.remove(device)
 
     # ---
 
@@ -234,7 +261,7 @@ class Platform:
         self.log.error( str(status.get("error_string", "")) + "\n" )
 
         # Remove mounted device from the previous configuration
-        await self.unmount_all_devices()
+        self.event_loop.create_task(self.unmount_all_devices(), name="PANIC")
 
     # ---
 
@@ -252,11 +279,9 @@ class Platform:
         # Start the global task group
         async with asyncio.TaskGroup() as self.task_group:
 
-            self.log.warning("1")
             # Connect to primary broker
             await self.mount_client("primary", "localhost", 1883)
 
-            self.log.warning("2")
             # Mount the device interfaces of the server
             await self.mount_device("primary", "server", 
                 {
@@ -266,14 +291,12 @@ class Platform:
                 keep_mounted=True
             )
 
-            self.log.warning("3")
             # Task that load the config tree
             await self.__load_tree_task()
 
             # Wait for ever
             while(self.alive):
                 await asyncio.sleep(1)
-
 
         self.log.warning("END OF IDLE !")
         self.event_loop.stop()
@@ -291,36 +314,20 @@ class Platform:
         # Create the idle task
         self.event_loop.create_task(self.__idle_task(), name="IDLE")
 
-        # 
-        monitor = None
+        # Setup monitoring
+        self.monitor = None
         if self.event_loop_debug:
-            monitor = aiomonitor.Monitor(self.event_loop)
-            monitor.start()
+            self.monitor = aiomonitor.Monitor(self.event_loop)
+            self.monitor.start()
 
-        # try:
-        self.log.info("platform run")
-        self.event_loop.run_forever()
-        # finally:
-        #     # loop.run_until_complete(loop.shutdown_asyncgens())
-        #     # loop.close()
-        #     pass
-
-
-        # # 
-        # if self.event_loop_debug:
-        #     with aiomonitor.start_monitor(self.event_loop):
-        #         self.event_loop.run_until_complete(self.__idle_task())
-        # else:
-        #     self.event_loop.run_until_complete(self.__idle_task())
- 
-        # except InitializationError as e:
-        #     self.log.critical(f"Error during platform initialization: {e}")
-        #     self.generate_early_status_report(str(e))
-        # except KeyboardInterrupt:
-        #     self.log.warning("ctrl+c => user stop requested")
-        #     self.stop()
-        # except FileNotFoundError:
-        #     self.log.critical(f"Platform configuration file 'tree.json' has not been found at location '{self.dtree_filepath}' !!==>> STOP PLATFORM")
+        # Run main event loop
+        try:
+            self.log.info("Platform running...")
+            self.event_loop.run_forever()
+        finally:
+            # if monitor:
+            #     monitor.close()
+            pass
 
     # ---
 
@@ -350,74 +357,35 @@ class Platform:
 
     # ---
 
-    def stop(self):
-        """To stop the entire platform
+    async def stop_sequence(self):
         """
+        """
+        # Logs
+        self.log.warning("*************************")
+        self.log.warning("***** STOP SEQUENCE *****")
+        self.log.warning(f"TASKS")
+        for task_info in self.monitor.format_running_task_list(None, False):
+            self.log.warning(f"- {task_info}")
+        self.log.warning(f"---")
+        self.log.warning(f"DEVICES:")
+        for dev in self.devices:
+            self.log.warning(f"- {dev}")
+        self.log.warning(f"---")
+        self.log.warning(f"CLIENTS:")
+        for cli in self.clients:
+            self.log.warning(f"- {cli}")
+
         # Stop alive flag
         self.alive = False
-
-        # 
-        self.event_loop.create_task(self.unmount_all_devices(force=True), name="CLEAR")
-         
-        #
-        self.event_loop.create_task(self.unmount_all_clients(force=True), name="CLEAR")
-
+        await self.unmount_all_devices(force=True)
+        await self.unmount_all_clients(force=True)
 
     # ---
 
-    # def generate_early_status_report(self, error_string):
-    #     """Generate a status report when something went wrong during initialization
-    #     """
-    #     status_obj = {}
-
-    #     status_obj["final_state"] = "initialization"
-    #     status_obj["error_string"] = error_string
-    #     status_obj["threads"] = []
-
-    #     # Write the status file
-    #     with open(STATUS_FILE_PATH, "w") as json_file:
-    #         json.dump(status_obj, json_file)
-
-    # # ---
-
-    # def generate_status_reports(self):
-    #     """Generate a json report status and log it to the console
-    #     """
-
-    #     status_obj = {}
-    #     status_obj["final_state"] = "running"
-
-    #     # Gather the status of each thread
-    #     thread_status = []
-    #     for thr in self.threads:
-    #         thread_status.append(thr.get_status())
-
-    #     # 
-    #     status_obj["threads"] = thread_status
-
-    #     # Write the status file
-    #     with open(STATUS_FILE_PATH, "w") as json_file:
-    #         json.dump(status_obj, json_file)
-
-    #     # Print into the console
-    #     report  = "\n"
-    #     for thr in thread_status:
-    #         report += "=================================\n"
-    #         report +=f"== {thr['name']} \n"
-    #         report += "=================================\n"
-
-    #         for w in thr['workers']:
-    #             report += "\n"
-    #             report += str(w.get("name", "")) + "\n"
-    #             report += str(w.get("final_state", "")) + "\n"
-    #             report += str(w.get("error_string", "")) + "\n"
-    #     self.log.info(report)
-
-
- 
-
-
-
+    def stop(self):
+        """To stop the entire platform
+        """
+        self.event_loop.create_task(self.stop_sequence(), name="STOP_SEQ")
 
     # ---
 

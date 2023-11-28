@@ -11,6 +11,8 @@ class MonitoredEventLoop(asyncio.SelectorEventLoop):
     # ---
 
     def __init__(self, platform, *args, **kwargs):
+        """Constructor
+        """
         super().__init__(*args, **kwargs)
         self._total_time = 0
         self._select_time = 0
@@ -21,7 +23,8 @@ class MonitoredEventLoop(asyncio.SelectorEventLoop):
         self.log = self.platform.log
         self.perf_cycle_time = 2
 
-        # self.log.info(f"EVENT LOOP UP !!")
+        # Number of ctrl-c before force quitting
+        self.__stop_retry = 3
 
     # ---
 
@@ -29,7 +32,6 @@ class MonitoredEventLoop(asyncio.SelectorEventLoop):
     def run_forever(self):
         self.ref_time = self.time()
         try:
-            self.log.info(f"EVENT LOOP RUN")
             self._check_closed()
             self._check_running()
             self._set_coroutine_origin_tracking(self._debug)
@@ -43,14 +45,16 @@ class MonitoredEventLoop(asyncio.SelectorEventLoop):
                 
                 while True:
                     try:
-                        # self.log.info(f"ONE")
                         self._run_once()
                         if self._stopping:
                             break
                     except KeyboardInterrupt:
-                        self.log.warning("ctrl+c => user stop requested !!!!!!!!!!!! XD")
-                        # self._stopping = True
+                        self.log.warning(f"ctrl+c => user stop requested ({self.__stop_retry})")
                         self.platform.stop()
+                        self.__stop_retry -= 1
+                        if self.__stop_retry <= 0:
+                            self._stopping = True
+                        
             finally:
                 self._stopping = False
                 self._thread_id = None
@@ -65,7 +69,7 @@ class MonitoredEventLoop(asyncio.SelectorEventLoop):
 
     # SELECT TIME:
     def _run_once(self):
-        # print("_run_once")
+        # print(f"!1")
         self._before_select = self.time()
         super()._run_once()
 
@@ -79,7 +83,6 @@ class MonitoredEventLoop(asyncio.SelectorEventLoop):
         super()._process_events(*args, **kwargs)
 
         cycle_time = self.time() - self.ref_time
-        # self.log.info(f"EVENT {cycle_time}")
         if cycle_time >= self.perf_cycle_time:
 
             work_time = cycle_time - self._select_time

@@ -25,10 +25,7 @@ class InterfacePanduzaFakeVideoStream(PlatformDriver):
     async def _PZA_DRV_loop_init(self):
         """From PlatformDriver
         """
-
-        # docker run -d -p 1935:1935 -p 8080:8080 alqutami/rtmp-hls:latest-alpine
-
-
+        self.process = None
 
 
         # test video
@@ -40,15 +37,19 @@ class InterfacePanduzaFakeVideoStream(PlatformDriver):
             '-preset', 'superfast',
             '-tune', 'zerolatency',
             '-vcodec', 'libx264',
+            '-c:v', 'libx264',
+            '-max_muxing_queue_size', '1024', '-g', '30',
             '-f', 'flv', 'rtmp://127.0.0.1:1935/live/test'
         ]
 
-        # ffplay -fflags nobuffer -flags low_delay -probesize 20000 -analyzeduration 1 -strict experimental -framedrop -f flv rtmp://127.0.0.1:1935/live/test
+        # http://localhost:8888/live/test
+        # ffplay -fflags nobuffer -flags low_delay -probesize 20000 -analyzeduration 1 -strict experimental -framedrop  http://localhost:8888/live/test/index.m3u8
 
         ffmpeg_cmd_string = ''
         for part in ffmpeg_command:
             ffmpeg_cmd_string += f"{part} "
         self.log.info(ffmpeg_cmd_string)
+        self.log.info("ffplay -fflags nobuffer -flags low_delay -probesize 20000 -analyzeduration 1 -strict experimental -framedrop  http://localhost:8888/live/test/index.m3u8")
 
         self.process = subprocess.Popen(ffmpeg_command, stdout=None, stderr=None)
 
@@ -106,7 +107,8 @@ class InterfacePanduzaFakeVideoStream(PlatformDriver):
         """Kill running process when interface down
         """
         self.log.info("Stop ffmpeg stream")
-        self.process.send_signal(signal.SIGTERM)
+        if self.process:
+            self.process.send_signal(signal.SIGTERM)
 
     # ---
 

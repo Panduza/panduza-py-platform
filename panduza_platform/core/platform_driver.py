@@ -195,13 +195,9 @@ class PlatformDriver(PlatformWorker):
     # ---
 
     async def PZA_WORKER_task(self):
+        """Worker main task implementation for interfaces
         """
-        """
-
-        # self.log.info(f"pokkkk task {self.__drv_state} {self.__err_string}")
-
         try:
-
             # Process Scan Events
             await self.__process_scan_events()
 
