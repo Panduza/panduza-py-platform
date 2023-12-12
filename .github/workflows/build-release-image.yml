@@ -1,0 +1,51 @@
+name: Build Release Image
+
+# IF TAG PUSHED
+on:
+  push:
+    tags:
+      - '*'
+
+env:
+  # Use docker.io for Docker Hub if empty
+  REGISTRY: ghcr.io
+  # github.repository as <account>/<repo>
+  REPO: ${{ github.repository }}
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Login against a Docker registry except on PR
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Extract metadata (tags, labels) for Docker
+      - name: Extract Docker metadata for panduza-py-platform
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: "ghcr.io/${{ github.repository_owner }}/panduza-py-platform"
+          tags : type = raw, value = ${{ github.ref_name }}
+
+      # Build and push Docker image with Buildx
+      - name: Build and push Docker image panduza-py-platform
+        id: build-and-push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }} 
+
