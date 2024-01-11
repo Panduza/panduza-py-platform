@@ -77,6 +77,11 @@ class PlatformDeviceFactory:
 
     # ---
 
+    def get_number_of_drivers(self):
+        return len(self.__device_store.keys())
+
+    # ---
+
     def get_devices_store(self):
         return self.__device_store
 

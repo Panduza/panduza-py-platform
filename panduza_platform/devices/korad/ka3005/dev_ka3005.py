@@ -48,7 +48,13 @@ class DeviceKoradKA3005P(PlatformDevice):
                         serial_port_name=devname,
                         serial_baudrate=9600
                     )
-                    IDN = await connector.write_and_read_until("*IDN?", time_lock_s=0.5)
+
+                    IDN=None
+                    try:
+                        IDN = await asyncio.wait_for(connector.write_and_read_until("*IDN?", time_lock_s=0.5), timeout=1)
+                    except asyncio.TimeoutError:
+                        self.log.debug("timeout comminucation")
+                        continue
                     self.log.info(f">>>>>>>-------------------- {IDN}")
 
                     if IDN.decode().startswith("KORAD KD3005P"):
