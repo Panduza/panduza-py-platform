@@ -1,16 +1,22 @@
 import asyncio
 from core.platform_device import PlatformDevice
 
-# from .itf_korad_ka3005p_bpc import InterfaceKoradKa3005pBPC
-# from .itf_korad_ka3005p_ammeter import InterfaceKoradKa3005pAmmeter
-# from .itf_korad_ka3005p_voltmeter import InterfaceKoradKa3005pVoltmeter
+
+from pathlib import Path
+from ThorlabsPM100 import ThorlabsPM100, USBTMC
+import os
+
+import usb
+import usbtmc
 
 
+
+from connectors.utils.usbtmc import HuntUsbtmcDevs
 from connectors.udev_tty import HuntUsbDevs
 
 from connectors.serial_tty import ConnectorSerialTty
 
-class DeviceKoradKA3005P(PlatformDevice):
+class DeviceThorlabsPM100A(PlatformDevice):
     """Power Supply From Korad
     """
 
@@ -36,34 +42,57 @@ class DeviceKoradKA3005P(PlatformDevice):
         """
         """
         bag = []
+        
+        # 1313:8079 ThorLabs PM100A
+        
+        # def send(cmd, devvv):
+        #     # address taken from results of print(dev):   ENDPOINT 0x3: Bulk OUT
+        #     devvv.write(0x2,cmd)
+        #     # address taken from results of print(dev):   ENDPOINT 0x81: Bulk IN
+        #     result = (devvv.read(0x82,100000,1000))
+        #     return result
+        
+        # try:
+        #     print("start")
+        #     a = usbtmc.list_devices()
+        #     print(a[0])
+        #     print(a[0].idVendor)
+        #     print(a[0].idProduct)
+        #     print(a[0].iSerialNumber)
+        #     print(a[0].serial_number) # ok
+        #     # inst = usbtmc.Instrument(a[0])
+        #     # print(inst.ask("*IDN?"))
+        #     # print(dev)
+        #     print("stop")
+        # except Exception as e:
+        #     print("errororoorroorororo")
+        #     print(e)
 
-        # matches = HuntUsbDevs('0416', '5011', 'tty')
-        # for match in matches:
-        #     # print('------', match)
-        #     devname = match.get('DEVNAME', None)
-        #     if devname:
-        #         try:
-        #             # self.log.info(devname)
-        #             connector = await ConnectorSerialTty.Get(
-        #                 serial_port_name=devname,
-        #                 serial_baudrate=9600
-        #             )
-        #             IDN = await connector.write_and_read_until("*IDN?", time_lock_s=0.5)
-        #             self.log.info(f">>>>>>>-------------------- {IDN}")
 
-        #             if IDN.decode().startswith("KORAD KD3005P"):
-        #                 ma = self._PZA_DEV_config()["manufacturer"]
-        #                 mo = self._PZA_DEV_config()["model"]
-        #                 ref = f"{ma}.{mo}"
-        #                 bag.append({
-        #                     "ref": ref,
-        #                     "settings": {
-        #                         "usb_serial_short": match.get('ID_SERIAL_SHORT', None)
-        #                     }
-        #                 })
+        try:
+            matches = HuntUsbtmcDevs(0x1313, 0x8079)
+            for match in matches:
+                # print('------', match)
+                # devlink = match.get('DEVLINKS', None)
+                # if devlink:
+                # print(f"pooookkkkk1 {devlink}")
+        
+                ma = self._PZA_DEV_config()["manufacturer"]
+                mo = self._PZA_DEV_config()["model"]
+                ref = f"{ma}.{mo}"
+                bag.append({
+                    "ref": ref,
+                    "settings": {
+                        "usb_vendor": match.idVendor,
+                        "usb_model": match.idProduct,
+                        "usb_serial_short": match.serial_number
+                    }
+                })
+        
+        except Exception as e:
+            print("errororoorroorororo")
+            print(e)
 
-        #         except asyncio.exceptions.TimeoutError:
-        #             print("tiemout")
 
         return bag
     
