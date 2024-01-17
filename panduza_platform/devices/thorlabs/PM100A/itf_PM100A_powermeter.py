@@ -1,10 +1,19 @@
 import asyncio
 from meta_drivers.powermeter import MetaDriverPowermeter
 
+from connectors.usbtmc import ConnectorUsbtmc
 
 class InterfaceThorlabsPM100APowermeter(MetaDriverPowermeter):
     """Fake Powermeter driver
     """
+
+    # ---
+
+    def __init__(self, name=None, settings={}) -> None:
+        """Constructor
+        """
+        self.settings = settings
+        super().__init__(name=name)
 
     # ---
 
@@ -15,13 +24,9 @@ class InterfaceThorlabsPM100APowermeter(MetaDriverPowermeter):
 
         # settings = tree.get("settings", {})
         # self.log.info(settings)
+        self.usbtmc = ConnectorUsbtmc.Get(**self.settings)
 
-        # work_with_fake_bpc = settings.get("work_with_fake_bpc", None)
-        # self.bpc_obj = self.get_interface_instance_from_pointer(work_with_fake_bpc)
-
-        
         self.platform.load_task(self.__increment_task())
-
 
         self.__fakes = {
             "measure": {

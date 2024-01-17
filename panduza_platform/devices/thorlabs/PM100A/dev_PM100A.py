@@ -3,18 +3,16 @@ from core.platform_device import PlatformDevice
 
 
 from pathlib import Path
-from ThorlabsPM100 import ThorlabsPM100, USBTMC
+# from ThorlabsPM100 import ThorlabsPM100, USBTMC
 import os
 
 import usb
 import usbtmc
 
-
-
 from connectors.utils.usbtmc import HuntUsbtmcDevs
-from connectors.udev_tty import HuntUsbDevs
+# from connectors.udev_tty import HuntUsbDevs
 
-from connectors.serial_tty import ConnectorSerialTty
+from .itf_PM100A_powermeter import InterfaceThorlabsPM100APowermeter
 
 class DeviceThorlabsPM100A(PlatformDevice):
     """Power Supply From Korad
@@ -44,14 +42,7 @@ class DeviceThorlabsPM100A(PlatformDevice):
         bag = []
         
         # 1313:8079 ThorLabs PM100A
-        
-        # def send(cmd, devvv):
-        #     # address taken from results of print(dev):   ENDPOINT 0x3: Bulk OUT
-        #     devvv.write(0x2,cmd)
-        #     # address taken from results of print(dev):   ENDPOINT 0x81: Bulk IN
-        #     result = (devvv.read(0x82,100000,1000))
-        #     return result
-        
+
         # try:
         #     print("start")
         #     a = usbtmc.list_devices()
@@ -104,29 +95,22 @@ class DeviceThorlabsPM100A(PlatformDevice):
         """
 
         settings = self.get_settings()
+        print(settings)
 
         # if ('usb_serial_short' not in settings) and ('serial_port_name' not in settings):
         #     raise Exception("At least one settings must be set")
 
-        # const_settings = {
-        #     "usb_vendor": '0416',
-        #     "usb_model": '5011',
-        #     "serial_baudrate": 9600
-        # }
+        const_settings = {
+            "usb_vendor": 0x1313,
+            "usb_model": 0x8079,
+        }
+        settings.update(const_settings)
 
-        # settings.update(const_settings)
+        self.log.info(f"=> {settings}")
 
-        # self.log.info(f"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!{settings}")
-        
-        # self.mount_interface(
-        #     InterfaceKoradKa3005pBPC(name=f":channel_0:_ctrl", settings=settings)
-        # )
-        # self.mount_interface(
-        #     InterfaceKoradKa3005pAmmeter(name=f":channel_0:_am", settings=settings)
-        # )
-        # self.mount_interface(
-        #     InterfaceKoradKa3005pVoltmeter(name=f":channel_0:_vm", settings=settings)
-        # )
+        self.mount_interface(
+            InterfaceThorlabsPM100APowermeter(name=f"powermeter", settings=settings)
+        )
 
 
 
