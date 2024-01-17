@@ -29,9 +29,9 @@ class DeviceThorlabsPM100A(PlatformDevice):
             "manufacturer": "Thorlabs",
             "settings_props": [
                 {
-                    'name': 'serial_port_name',
+                    'name': 'usb_serial_short',
                     'type': 'string',
-                    'default': '/dev/ttyACM0'
+                    'default': ''
                 }
             ]
         }
@@ -83,8 +83,8 @@ class DeviceThorlabsPM100A(PlatformDevice):
                 bag.append({
                     "ref": ref,
                     "settings": {
-                        "usb_vendor": match.idVendor,
-                        "usb_model": match.idProduct,
+                        # "usb_vendor": match.idVendor,
+                        # "usb_model": match.idProduct,
                         "usb_serial_short": match.serial_number
                     }
                 })
