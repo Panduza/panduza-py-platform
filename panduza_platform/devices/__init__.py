@@ -1,6 +1,7 @@
 from .ftdi import PZA_DEVICES_LIST as FTDI_DEVICES
 from .hanmatek import PZA_DEVICES_LIST as HANMATEK_DEVICES
 from .korad import PZA_DEVICES_LIST as KORAD_DEVICES
+from .oxxius import PZA_DEVICES_LIST as OXXIUS_DEVICES
 from .panduza import PZA_DEVICES_LIST as PANDUZA_DEVICES
 from .tenma import PZA_DEVICES_LIST as TENMA_DEVICES
 from .thorlabs import PZA_DEVICES_LIST as THORLABS_DEVICES
@@ -9,6 +10,7 @@ PZA_DEVICES_LIST = [] \
     + FTDI_DEVICES \
     + HANMATEK_DEVICES \
     + KORAD_DEVICES \
+    + OXXIUS_DEVICES \
     + PANDUZA_DEVICES \
     + TENMA_DEVICES \
     + THORLABS_DEVICES

@@ -18,7 +18,7 @@ RUN apt-get -y install libusb-1.0-0
 RUN python3.11 -m pip install coverage
 RUN python3.11 -m pip install colorama==0.4.6
 RUN python3.11 -m pip install paho-mqtt==1.6.1
-RUN python3.11 -m pip install pyftdi==0.54.0
+RUN python3.11 -m pip install pyftdi==0.55.0
 RUN python3.11 -m pip install pymodbus==3.3.2
 RUN python3.11 -m pip install pyserial==3.5
 RUN python3.11 -m pip install pyudev==0.24.0
