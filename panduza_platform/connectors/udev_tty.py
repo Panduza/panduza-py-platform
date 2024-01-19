@@ -88,6 +88,7 @@ def HuntUsbDevs(usb_vendor, usb_model=None, subsystem=None):
     for device in udev_context.list_devices():
         properties = dict(device.properties)
 
+        
         if usb_vendor is not None and properties.get("ID_VENDOR_ID") != usb_vendor:
             continue
         if usb_model is not None and properties.get("ID_MODEL_ID") != usb_model :
@@ -97,7 +98,7 @@ def HuntUsbDevs(usb_vendor, usb_model=None, subsystem=None):
 
         results.append(properties)
         # For debugging purpose
-        # logger.debug(f"{properties}")
-
+        # print(f"{properties}")
+        
     return results
 

@@ -23,3 +23,20 @@ def HuntUsbtmcDevs(usb_vendor, usb_model=None):
 
     return results
 
+
+def FindUsbtmcDev(usb_vendor, usb_model=None, usb_serial_short=None):
+    
+    availables = HuntUsbtmcDevs(usb_vendor, usb_model)
+    for dev in availables:
+        # Check serial if required
+        if usb_serial_short != None:
+            if dev.serial_number == usb_serial_short:
+                return dev
+        
+        # Else return the first in the list
+        else:
+            return dev
+    
+    return None
+
+

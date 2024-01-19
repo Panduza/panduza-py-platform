@@ -2,14 +2,16 @@ import time
 import asyncio
 import logging
 import aioserial
-# import serial_asyncio
 
-from .serial_base import ConnectorSerialBase
+import concurrent.futures
+
+
 from log.driver import driver_logger
 
-from .udev_tty import SerialPortFromUsbSetting
+# from .udev_tty import SerialPortFromUsbSetting
 
-from .utils.usbtmc import HuntUsbtmcDevs
+import usbtmc
+from .utils.usbtmc import FindUsbtmcDev
 
 class ConnectorUsbtmc():
     """
@@ -50,6 +52,7 @@ class ConnectorUsbtmc():
 
             # Get the serial port name
             usbtmc_key = f"{kwargs['usb_vendor']}_{kwargs['usb_model']}_{kwargs['usb_serial_short']}"
+            ConnectorUsbtmc.log.debug(f"Key {usbtmc_key}")
 
             # Create the new connector
             if not (usbtmc_key in ConnectorUsbtmc.__INSTANCES):
@@ -81,25 +84,14 @@ class ConnectorUsbtmc():
         # Init command mutex
         self._cmd_mutex = asyncio.Lock()
 
-        self.log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+
         self.log.info(kwargs)
-        # HuntUsbtmcDevs
-        self.log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        # # Init time lock
-        # self._time_lock_s = None
-
-        # key = kwargs["serial_port_name"]
+        device_ref = FindUsbtmcDev(usb_vendor= kwargs["usb_vendor"], 
+                      usb_model= kwargs["usb_model"], 
+                      usb_serial_short=kwargs['usb_serial_short'])
         
-        # if not (key in ConnectorUsbtmc.__INSTANCES):
-        #     raise Exception("You need to pass through Get method to create an instance")
-        # else:
-        #     self.log = driver_logger(key)
-        #     self.log.info(f"attached to the UART Serial Connector")
-
-        #     # Configuration for UART communication
-
-        #     self.serial_port_name = kwargs.get("serial_port_name", "/dev/ttyUSB0")
-        #     self.serial_baudrate = kwargs.get("serial_baudrate", 9600)
+        self.usbtmc_instance = usbtmc.Instrument(device_ref)
+        self.usbtmc_instance.open()
 
     # ---
 
@@ -118,15 +110,46 @@ class ConnectorUsbtmc():
     # # async def end_cmd(self):
     # #     self._cmd_mutex.release()
 
-    # # ---
 
-    # async def read(self, n_bytes = None):
-    #     """Read from UART using asynchronous mode
-    #     """
-    #     async with self._mutex:
-    #         return await asyncio.wait_for(self.aioserial_instance.read_async(n_bytes), timeout=1.0)
+    def close(self):
+        self.usbtmc_instance.close()
 
-    # # ---
+    # ---
+
+    async def ask(self, command):
+        """
+        """
+        return await asyncio.wait_for(
+            self.run_async_function(self.usbtmc_instance.ask, command),
+            timeout=2.0)
+
+    # ---
+
+    def ask_e(self, command):
+        """
+        """
+        return self.usbtmc_instance.ask(command)
+        
+    # ---
+
+    async def run_async_function(self,function,*args):
+        async with self._mutex:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                # Submit the function to the executor
+                future = executor.submit(function, *args)
+                
+                # Wait for the future to complete
+                while not future.done():
+                    await asyncio.sleep(0.1)
+                    #print(f"Waiting for the thread to complete...")
+                
+                # Retrieve the result from the future
+                result = future.result()
+                #print("Result:", result)
+                
+                return result
+
+    # ---
 
     # async def read_during(self, duration_s = 0.5):
     #     """

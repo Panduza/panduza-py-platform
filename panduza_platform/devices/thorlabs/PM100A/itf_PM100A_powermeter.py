@@ -1,7 +1,8 @@
 import asyncio
 from meta_drivers.powermeter import MetaDriverPowermeter
 
-from connectors.usbtmc import ConnectorUsbtmc
+from connectors import ConnectorThorlabsPM100
+
 
 class InterfaceThorlabsPM100APowermeter(MetaDriverPowermeter):
     """Fake Powermeter driver
@@ -21,18 +22,10 @@ class InterfaceThorlabsPM100APowermeter(MetaDriverPowermeter):
         """Init function
         Reset fake parameters
         """
-
-        # settings = tree.get("settings", {})
-        # self.log.info(settings)
-        self.usbtmc = ConnectorUsbtmc.Get(**self.settings)
-
-        self.platform.load_task(self.__increment_task())
-
-        self.__fakes = {
-            "measure": {
-                "value": 0
-            }
-        }
+ 
+        
+        self.conn = await ConnectorThorlabsPM100.Get(**self.settings)
+        print(self.conn.read())
 
         # Call meta class BPC ini
         await super()._PZA_DRV_loop_init()
@@ -40,11 +33,5 @@ class InterfaceThorlabsPM100APowermeter(MetaDriverPowermeter):
     # ---
 
     async def _PZA_DRV_POWERMETER_read_measure_value(self):
-        return self.__fakes["measure"]["value"]
+        return self.conn.read()
 
-    # ---
-
-    async def __increment_task(self):
-        while self.alive:
-            await asyncio.sleep(0.2)
-            self.__fakes["measure"]["value"] += 0.001

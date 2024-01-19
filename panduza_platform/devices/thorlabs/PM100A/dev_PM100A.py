@@ -95,6 +95,7 @@ class DeviceThorlabsPM100A(PlatformDevice):
         """
 
         settings = self.get_settings()
+        print("in device !!!")
         print(settings)
 
         # if ('usb_serial_short' not in settings) and ('serial_port_name' not in settings):
