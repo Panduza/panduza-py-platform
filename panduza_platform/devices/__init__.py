@@ -1,3 +1,4 @@
+from .cobolt import PZA_DEVICES_LIST as COBOLT_DEVICES
 from .ftdi import PZA_DEVICES_LIST as FTDI_DEVICES
 from .hanmatek import PZA_DEVICES_LIST as HANMATEK_DEVICES
 from .korad import PZA_DEVICES_LIST as KORAD_DEVICES
@@ -7,6 +8,7 @@ from .tenma import PZA_DEVICES_LIST as TENMA_DEVICES
 from .thorlabs import PZA_DEVICES_LIST as THORLABS_DEVICES
 
 PZA_DEVICES_LIST = [] \
+    + COBOLT_DEVICES \
     + FTDI_DEVICES \
     + HANMATEK_DEVICES \
     + KORAD_DEVICES \

@@ -23,9 +23,8 @@ class InterfaceThorlabsPM100APowermeter(MetaDriverPowermeter):
         Reset fake parameters
         """
  
-        
         self.conn = await ConnectorThorlabsPM100.Get(**self.settings)
-        print(self.conn.read())
+        # print(self.conn.read())
 
         # Call meta class BPC ini
         await super()._PZA_DRV_loop_init()

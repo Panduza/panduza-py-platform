@@ -112,6 +112,10 @@ class ConnectorSerialTty(ConnectorSerialBase):
 
             self.serial_port_name = kwargs.get("serial_port_name", "/dev/ttyUSB0")
             self.serial_baudrate = kwargs.get("serial_baudrate", 9600)
+        
+        
+        print(self.serial_port_name)    
+        print(self.serial_baudrate)
 
     # ---
 
