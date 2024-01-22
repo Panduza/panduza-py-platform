@@ -51,7 +51,7 @@ class InterfaceTenma722710Bpc(MetaDriverBpc):
     async def _PZA_DRV_BPC_read_enable_value(self):
         # Send "STATUS?" to get back the output state
 
-        statusBytes = await self.serial_connector.write_and_read_until("STATUS?\n", time_lock_s=COMMAND_TIME_LOCK, read_duration_s=0.1)
+        statusBytes = await self.serial_connector.write_and_read_during("STATUS?\n", time_lock_s=COMMAND_TIME_LOCK, read_duration_s=0.1)
 
         self.log.debug(f"{statusBytes.strip()}")
         status = ord(statusBytes.strip())
@@ -74,7 +74,7 @@ class InterfaceTenma722710Bpc(MetaDriverBpc):
 
     async def _PZA_DRV_BPC_read_voltage_value(self):
         # Send "VSET1?" to get the voltage value
-        voltage = await self.serial_connector.write_and_read_until(f"VSET{self.channel}?\n", time_lock_s=COMMAND_TIME_LOCK, read_duration_s=0.1)
+        voltage = await self.serial_connector.write_and_read_during(f"VSET{self.channel}?\n", time_lock_s=COMMAND_TIME_LOCK, read_duration_s=0.1)
         return float(voltage)
 
     # ---
@@ -96,7 +96,7 @@ class InterfaceTenma722710Bpc(MetaDriverBpc):
     # CURRENT #
 
     async def _PZA_DRV_BPC_read_current_value(self):
-        current = await self.serial_connector.write_and_read_until(f"ISET{self.channel}?\n", time_lock_s=COMMAND_TIME_LOCK, read_duration_s=0.1)
+        current = await self.serial_connector.write_and_read_during(f"ISET{self.channel}?\n", time_lock_s=COMMAND_TIME_LOCK, read_duration_s=0.1)
         return float(current)
 
     # ---

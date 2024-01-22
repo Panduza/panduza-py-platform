@@ -32,7 +32,7 @@ class InterfaceKoradKa3005pVoltmeter(MetaDriverVoltmeter):
     # ---
 
     async def _PZA_DRV_VOLTMETER_read_measure_value(self):
-        voltage = await self.serial_connector.write_and_read_until(f"VOUT{self.channel}?\n", time_lock_s=COMMAND_TIME_LOCK, read_duration_s=0.1)
+        voltage = await self.serial_connector.write_and_read_during(f"VOUT{self.channel}?\n", time_lock_s=COMMAND_TIME_LOCK, read_duration_s=0.1)
         return float(voltage.strip())
         # return float(voltage[1:].strip())
 

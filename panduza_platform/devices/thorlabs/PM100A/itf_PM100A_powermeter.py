@@ -1,7 +1,7 @@
 import asyncio
 from meta_drivers.powermeter import MetaDriverPowermeter
 
-from connectors import ConnectorThorlabsPM100
+from panduza_platform.connectors.thorlabs_pm100.connector import ConnectorThorlabsPM100
 
 
 class InterfaceThorlabsPM100APowermeter(MetaDriverPowermeter):

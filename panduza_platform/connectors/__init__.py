@@ -1,4 +1,4 @@
 
 
-from .thorlabs_pm100.connector import ConnectorThorlabsPM100
+# from .thorlabs_pm100.connector import ConnectorThorlabsPM100
 

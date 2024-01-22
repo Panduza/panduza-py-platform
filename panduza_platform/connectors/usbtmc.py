@@ -205,7 +205,7 @@ class ConnectorUsbtmc():
 
     # # ---
 
-    # async def write_and_read_until(self, message, time_lock_s=0, read_duration_s=0.5):
+    # async def write_and_read_during(self, message, time_lock_s=0, read_duration_s=0.5):
     #     async with self._mutex:
     #         await self._write(message, time_lock_s)
     #         data = []

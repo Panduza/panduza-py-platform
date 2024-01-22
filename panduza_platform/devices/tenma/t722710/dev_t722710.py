@@ -63,7 +63,7 @@ class DeviceTenma722710(PlatformDevice):
                     
                     IDN=None
                     try:
-                        IDN = await asyncio.wait_for(connector.write_and_read_until("*IDN?", time_lock_s=0.5), timeout=1)
+                        IDN = await asyncio.wait_for(connector.write_and_read_during("*IDN?", time_lock_s=0.5), timeout=1)
                     except asyncio.TimeoutError:
                         self.log.debug("timeout comminucation")
                         continue

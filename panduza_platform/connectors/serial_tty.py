@@ -2,10 +2,9 @@ import time
 import asyncio
 import logging
 import aioserial
-# import serial_asyncio
 
 from .serial_base import ConnectorSerialBase
-from log.driver import driver_logger
+from panduza_platform.log.driver import driver_logger
 
 from .udev_tty import SerialPortFromUsbSetting
 
@@ -124,24 +123,14 @@ class ConnectorSerialTty(ConnectorSerialBase):
         """
         self.aioserial_instance = aioserial.AioSerial(port=self.serial_port_name, baudrate=self.serial_baudrate)
 
-        
-
-
     # =============================================================================
     # PRIVATE HELPER
 
     # ---
 
-    async def _read(self, n_bytes = None):
+    async def __write(self, message, time_lock_s=None):
         """
         """
-        return await asyncio.wait_for(self.aioserial_instance.read_async(n_bytes), timeout=1.0)
-
-    # ---
-
-    async def _write(self, message, time_lock_s=None):
-        """
-        """        
         try:
             # Manage time lock by waiting for the remaining duration
             if self._time_lock_s:
@@ -166,23 +155,8 @@ class ConnectorSerialTty(ConnectorSerialBase):
         except Exception as e:
             raise Exception('Error during writing to uart').with_traceback(e.__traceback__)
 
-    # ---
-
-    async def __accumulate_date(self, data):
-        while True:
-            data.append(await self.aioserial_instance.read_async(1))
-
-    # ---
-
     # =============================================================================
     # OVERRIDE FROM SERIAL_BASE
-
-
-    # async def beg_cmd(self):
-    #     await self._cmd_mutex.acquire()
-
-    # async def end_cmd(self):
-    #     self._cmd_mutex.release()
 
     # ---
 
@@ -194,27 +168,10 @@ class ConnectorSerialTty(ConnectorSerialBase):
 
     # ---
 
-    async def read_during(self, duration_s = 0.5):
-        """
-        """
-        async with self._mutex:
-            data = []
-            try:
-                await asyncio.wait_for(self.__accumulate_date(data), timeout=duration_s)
-            except asyncio.TimeoutError as e: 
-                pass
-                # raise Exception('Error during reading uart').with_traceback(e.__traceback__)
-
-            # Convert bytearray into bytes
-            return b''.join(data)
-
-    # ---
-
     async def write(self, message, time_lock_s=None):
         """write to UART using asynchronous mode
         """
         async with self._mutex:
-            
             try:
                 # Manage time lock by waiting for the remaining duration
                 if self._time_lock_s:
@@ -239,26 +196,82 @@ class ConnectorSerialTty(ConnectorSerialBase):
             except Exception as e:
                 raise Exception('Error during writing to uart').with_traceback(e.__traceback__)
 
+    # ---
 
-    # async def write_and_read(self, message, time_lock_s=0, n_bytes_to_read=10):
-    #     async with self._mutex:
-    #         await self._write(message, time_lock_s)
-    #         await asyncio.sleep(time_lock_s)
-    #         return await self._read(n_bytes_to_read)
+    # =============================================================================
+    # **** UNTIL ****
+    # Read until find the expected character
+    # LF = \n
 
     # ---
 
-    async def write_and_read_until(self, message, time_lock_s=0, read_duration_s=0.5):
+    async def __read_until(self, expected: bytes = aioserial.LF):
+        """Read until find the expected character (internal helper)
+        """
+        return await self.aioserial_instance.read_until_async(expected)
+
+    # ---
+
+    async def read_until(self, expected: bytes = aioserial.LF):
+        """Read data for specified duration
+        """
         async with self._mutex:
-            await self._write(message, time_lock_s)
-            data = []
-            try:
-                await asyncio.wait_for(self.__accumulate_date(data), timeout=read_duration_s)
-            except asyncio.TimeoutError as e: 
-                pass
-            return b''.join(data)
+            return await self.__read_until(expected)
 
     # ---
 
+    async def write_and_read_until(self, message, time_lock_s=0, expected: bytes = aioserial.LF):
+        """Write command then read data for specified duration
+        """
+        async with self._mutex:
+            await self.__write(message, time_lock_s)
+            return await self.__read_until(expected)
 
+    # ---
 
+    # =============================================================================
+    # **** DURING ****
+    # Read during a certain amount of time then return data
+    # Those methods are not recommended, but can be usefull when protocol is badly implemented or uncertain
+
+    # ---
+
+    async def __accumulate_data(self, data):
+        """Accumulate byte after byte in a buffer
+        """
+        while True:
+            data.append(await self.aioserial_instance.read_async(1))
+
+    # ---
+
+    async def __read_during(self, read_duration_s = 0.5):
+        """Read data for specified duration (internal helper)
+        """
+        data = []
+        try:
+            await asyncio.wait_for(self.__accumulate_data(data), timeout=read_duration_s)
+        except asyncio.TimeoutError as e:
+            # Ignore timeout error because it is the purpose of this mode
+            pass
+
+        # Convert bytearray into bytes
+        return b''.join(data)
+
+    # ---
+
+    async def read_during(self, read_duration_s = 0.5):
+        """Read data for specified duration
+        """
+        async with self._mutex:
+            return await self.__read_during(read_duration_s)
+
+    # ---
+
+    async def write_and_read_during(self, message, time_lock_s=0, read_duration_s=0.5):
+        """Write command then read data for specified duration
+        """
+        async with self._mutex:
+            await self.__write(message, time_lock_s)
+            return await self.__read_during(read_duration_s)
+
+    # ---
