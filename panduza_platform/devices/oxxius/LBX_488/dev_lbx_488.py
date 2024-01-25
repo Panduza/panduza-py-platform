@@ -49,13 +49,12 @@ class DeviceOxxiusLbx488(PlatformDevice):
 
         # 0403:90d9 Future Technology Devices International, Ltd LaserBoxx
 
-        # try:
+        try:
 
 
-        #     # Get the list of available devices
-        #     Ftdi.add_custom_product(Ftdi.DEFAULT_VENDOR, 0x90d9)
-        #     devices = Ftdi.list_devices()
-        #     Ftdi.show_devices()
+            # Get the list of available devices
+            Ftdi.add_custom_product(Ftdi.DEFAULT_VENDOR, 0x90d9)
+            Ftdi.show_devices()
             
         #     print("poooo")
         #     print(devices)
@@ -72,18 +71,61 @@ class DeviceOxxiusLbx488(PlatformDevice):
             
             
         #     # devices = usb.core.find(find_all=True)
-        #     dev = usb.core.find(idVendor=Ftdi.DEFAULT_VENDOR, idProduct=0x90d9)
-        #     # dev.set_configuration()
-        #     print(dev)
-        #     # dev.write(1, 'test')
+            dev = usb.core.find(idVendor=Ftdi.DEFAULT_VENDOR, idProduct=0x90d9)
+            if dev is None:
+                raise ValueError('Device not found')
+            print(dev)
+            dev.reset()
+            dev.set_configuration()
+            print("set conf")
+            
+            cfg = dev.get_active_configuration()
+            intf = cfg[(0,0)]
+            print(intf)
+            
+            ep = usb.util.find_descriptor(
+                intf,
+                # match the first OUT endpoint
+                custom_match = \
+                lambda e: \
+                    usb.util.endpoint_direction(e.bEndpointAddress) == \
+                    usb.util.ENDPOINT_OUT)
+
+            assert ep is not None
+
+            
+            # write the data
+            
+            patcket_sizeee = 32
+            cmd = b"?SV"
+            packet_to_send = cmd + b'\x00' * (patcket_sizeee - len(cmd))
+            # packet_to_send = cmd
+            ep.write(packet_to_send)
+
+
+            ep_in = usb.util.find_descriptor(
+                intf,
+                # match the first OUT endpoint
+                custom_match = \
+                lambda e: \
+                    usb.util.endpoint_direction(e.bEndpointAddress) == \
+                    usb.util.ENDPOINT_IN)
+
+
+
+            data_array_b = ep_in.read(patcket_sizeee)
+            print(data_array_b)
+            bytes_object = data_array_b.tobytes()
+            print(bytes_object)
+            
+            # data = ep_in.read(1)
+            # print(data)
+
+
 
 
         #     _usb_dev = dev
         #     # _usb_dev.open()
-        #     try:
-        #         _usb_dev.set_configuration()
-        #     except USBError:
-        #         pass
             
         #     _usb_dev.write(0x2, "?SV\n")
             
@@ -101,9 +143,9 @@ class DeviceOxxiusLbx488(PlatformDevice):
         #     #     print("Endpoint Direction: {}".format(endpoint.direction))
             
     
-        # except Exception as e:
-        #     print("errororoorroorororo")
-        #     print(e)
+        except Exception as e:
+            print("errororoorroorororo")
+            print(e)
 
 
         # try:

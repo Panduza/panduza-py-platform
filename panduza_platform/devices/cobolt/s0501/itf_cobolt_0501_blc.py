@@ -38,16 +38,17 @@ class InterfaceCobolt0501Blc(MetaDriverBlc):
         """
         
         self.serial_connector = await ConnectorSerialTty.Get(**self.settings)
-        
+
         command = "sn?"
-        termination = "\r\n"
+        termination = "\n\r"
         cmd = (command + termination)
-        print(cmd)
-        idn = await self.serial_connector.write_and_read_during(cmd, time_lock_s=COMMAND_TIME_LOCK, read_duration_s=1)
+        print(cmd.encode())
+        # print("pok")
+        idn = await self.serial_connector.write_and_read_until(cmd, expected=b"\n")
         print(f"ddddddd {idn}")
-        idn = await self.serial_connector.write_and_read_during(cmd, time_lock_s=COMMAND_TIME_LOCK, read_duration_s=1)
+        idn = await self.serial_connector.write_and_read_until(cmd, expected=b"\n")
         print(f"ddddddd {idn}")
-        idn = await self.serial_connector.write_and_read_during(cmd, time_lock_s=COMMAND_TIME_LOCK, read_duration_s=1)
+        idn = await self.serial_connector.write_and_read_until(cmd, expected=b"\n")
         print(f"ddddddd {idn}")
         # leds = await self.serial_connector.write_and_read_during("leds?\r\n", time_lock_s=COMMAND_TIME_LOCK, read_duration_s=1)
         # print(f"leds {leds}")
