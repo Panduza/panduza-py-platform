@@ -32,7 +32,7 @@ class InterfaceCobolt0501Blc(MetaDriverBlc):
 
     # ---
 
-    # def _PZA_DRV_BPC_config(self):
+    # def _PZA_DRV_BLC_config(self):
     #     """
     #     """
     #     return {
@@ -94,7 +94,20 @@ class InterfaceCobolt0501Blc(MetaDriverBlc):
 
     # ---
 
-    async def _PZA_DRV_BPC_read_enable_value(self):
+    async def _PZA_DRV_BLC_read_mode_value(self):
+        """Must get the mode value on the BPC and return it
+        """
+        raise NotImplementedError("Must be implemented !")
+
+    async def _PZA_DRV_BLC_write_mode_value(self, v):
+        """Must set *v* as the new mode value on the BPC
+        """
+        raise NotImplementedError("Must be implemented !")
+
+
+    # ---
+
+    async def _PZA_DRV_BLC_read_enable_value(self):
         """Get laser ON/OFF state
         """
         # 0 = OFF
@@ -104,7 +117,7 @@ class InterfaceCobolt0501Blc(MetaDriverBlc):
 
     # ---
 
-    async def _PZA_DRV_BPC_write_enable_value(self, v):
+    async def _PZA_DRV_BLC_write_enable_value(self, v):
         """Set laser ON/OFF state
         """
         val_int = 0
@@ -116,20 +129,20 @@ class InterfaceCobolt0501Blc(MetaDriverBlc):
 
     ###########################################################################
 
-    async def _PZA_DRV_BPC_read_power_value(self):
+    async def _PZA_DRV_BLC_read_power_value(self):
         # self.log.debug(f"read power value !")
         return self.__fakes["power"]["value"]
 
     # ---
 
-    async def _PZA_DRV_BPC_write_power_value(self, v):
+    async def _PZA_DRV_BLC_write_power_value(self, v):
         self.log.info(f"write power : {v}")
         self.__fakes["power"]["value"] = v
         self.__fakes["power"]["real"] = v
     
     # ---
 
-    async def _PZA_DRV_BPC_power_value_min_max(self):
+    async def _PZA_DRV_BLC_power_value_min_max(self):
         return {
             "min": self.__fakes["power"]["min"],
             "max": self.__fakes["power"]["max"] 
@@ -137,25 +150,25 @@ class InterfaceCobolt0501Blc(MetaDriverBlc):
 
     # ---
 
-    async def _PZA_DRV_BPC_read_power_decimals(self):
+    async def _PZA_DRV_BLC_read_power_decimals(self):
         return self.__fakes["power"]["decimals"]
 
     ###########################################################################
 
-    async def _PZA_DRV_BPC_read_current_value(self):
+    async def _PZA_DRV_BLC_read_current_value(self):
         # self.log.debug(f"read current value !")
         return self.__fakes["current"]["value"]
 
     # ---
 
-    async def _PZA_DRV_BPC_write_current_value(self, v):
+    async def _PZA_DRV_BLC_write_current_value(self, v):
         self.log.info(f"write current : {v}")
         self.__fakes["current"]["value"] = v
         self.__fakes["current"]["real"] = v
 
     # ---
 
-    async def _PZA_DRV_BPC_current_value_min_max(self):
+    async def _PZA_DRV_BLC_current_value_min_max(self):
         return {
             "min": self.__fakes["current"]["min"],
             "max": self.__fakes["current"]["max"] 
@@ -163,7 +176,7 @@ class InterfaceCobolt0501Blc(MetaDriverBlc):
 
     # ---
 
-    async def _PZA_DRV_BPC_read_current_decimals(self):
+    async def _PZA_DRV_BLC_read_current_decimals(self):
         return self.__fakes["current"]["decimals"]
 
 
