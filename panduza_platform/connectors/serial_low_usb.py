@@ -3,6 +3,9 @@ import asyncio
 import logging
 import aioserial
 
+import usb
+
+
 from .serial_base import ConnectorSerialBase
 from panduza_platform.log.driver import driver_logger
 
@@ -84,47 +87,40 @@ class ConnectorSerialLowUsb(ConnectorSerialBase):
 
         # Init command mutex
         self._cmd_mutex = asyncio.Lock()
-        
-        # key = kwargs["serial_port_name"]
-        
-        # if not (key in ConnectorSerialLowUsb.__INSTANCES):
-        #     raise Exception("You need to pass through Get method to create an instance")
-        # else:
-        #     self.log = driver_logger(key)
-        #     self.log.info(f"attached to the UART Serial Connector")
+
+        dev = usb.core.find(idVendor=Ftdi.DEFAULT_VENDOR, idProduct=0x90d9)
+        if dev is None:
+            raise ValueError('Device not found')
+        print(dev)
+        dev.reset()
+        dev.set_configuration()
+
+        # Must be found through dev
+        self.packet_size = 32
+
+        cfg = dev.get_active_configuration()
+        intf = cfg[(0,0)]
+        # print(intf)
+
+        # Take first output/input endpoint avaiable
+
+        self.ep_out = usb.util.find_descriptor(
+            intf,
+            # match the first OUT endpoint
+            custom_match = \
+            lambda e: \
+                usb.util.endpoint_direction(e.bEndpointAddress) == \
+                usb.util.ENDPOINT_OUT)
+
+        self.ep_in = usb.util.find_descriptor(
+            intf,
+            # match the first OUT endpoint
+            custom_match = \
+            lambda e: \
+                usb.util.endpoint_direction(e.bEndpointAddress) == \
+                usb.util.ENDPOINT_IN)
 
 
-    # =============================================================================
-    # PRIVATE HELPER
-
-    # ---
-
-    # async def __write(self, message, time_lock_s=None):
-    #     """
-    #     """
-    #     try:
-    #         # Manage time lock by waiting for the remaining duration
-    #         if self._time_lock_s:
-    #             elapsed = time.time() - self._time_lock_s["t0"]
-    #             if elapsed < self._time_lock_s["duration"]:
-
-    #                 wait_time = self._time_lock_s["duration"] - elapsed
-    #                 self.log.debug(f"wait lock {wait_time}")
-    #                 await asyncio.sleep(wait_time)
-    #             self._time_lock_s = None
-
-    #         # Start sending the message
-    #         await self.aioserial_instance.write_async(message.encode())
-
-    #         # Set the time lock if requested by the user
-    #         if time_lock_s != None:
-    #             self._time_lock_s = {
-    #                 "duration": time_lock_s,
-    #                 "t0": time.time()
-    #             }
-
-    #     except Exception as e:
-    #         raise Exception('Error during writing to uart').with_traceback(e.__traceback__)
 
     # =============================================================================
     # OVERRIDE FROM SERIAL_BASE
@@ -134,36 +130,24 @@ class ConnectorSerialLowUsb(ConnectorSerialBase):
     async def read(self, n_bytes = None):
         """Read from UART using asynchronous mode
         """
-        pass
+        async with self._mutex:
+            data_array_b = self.ep_in.read(self.packet_size)
+            bytes_object = data_array_b.tobytes()
+            return bytes_object
 
     # ---
 
     async def write(self, message, time_lock_s=None):
         """write to UART using asynchronous mode
         """
-        pass
-        # async with self._mutex:
-        #     try:
-        #         # Manage time lock by waiting for the remaining duration
-        #         if self._time_lock_s:
-        #             elapsed = time.time() - self._time_lock_s["t0"]
-        #             if elapsed < self._time_lock_s["duration"]:
 
-        #                 wait_time = self._time_lock_s["duration"] - elapsed
-        #                 self.log.debug(f"wait lock {wait_time}")
-        #                 await asyncio.sleep(wait_time)
-        #             self._time_lock_s = None
+        async with self._mutex:
+            try:
+                # write the data
+                cmd = message.encode()
+                packet_to_send = cmd + b'\x00' * (self.packet_size - len(cmd))
+                self.ep_out.write(packet_to_send)
 
-        #         # Start sending the message
-        #         await self.aioserial_instance.write_async(message.encode())
-
-        #         # Set the time lock if requested by the user
-        #         if time_lock_s != None:
-        #             self._time_lock_s = {
-        #                 "duration": time_lock_s,
-        #                 "t0": time.time()
-        #             }
-
-        #     except Exception as e:
-        #         raise Exception('Error during writing to uart').with_traceback(e.__traceback__)
+            except Exception as e:
+                raise Exception('Error during writing to uart').with_traceback(e.__traceback__)
 
