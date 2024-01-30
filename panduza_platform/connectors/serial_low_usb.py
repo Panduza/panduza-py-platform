@@ -50,19 +50,20 @@ class ConnectorSerialLowUsb(ConnectorSerialBase):
                 usb_vendor = kwargs["usb_vendor"]
             if "usb_model" in kwargs:
                 usb_model = kwargs["usb_model"]
-                
+   
             usb_serial_short=""
             if "usb_serial_short" in kwargs:
                 usb_serial_short = kwargs["usb_serial_short"]
 
             instance_name = str(f"{usb_vendor}_{usb_model}_{usb_serial_short}")
+            print(instance_name)
 
             # Create the new connector
             if not (instance_name in ConnectorSerialLowUsb.__INSTANCES):
                 ConnectorSerialLowUsb.__INSTANCES[instance_name] = None
                 try:
                     new_instance = ConnectorSerialLowUsb(**kwargs)
-                    await new_instance.connect()
+                    # await new_instance.connect()
                     
                     ConnectorSerialLowUsb.__INSTANCES[instance_name] = new_instance
                     ConnectorSerialLowUsb.log.info("connector created")
@@ -88,15 +89,26 @@ class ConnectorSerialLowUsb(ConnectorSerialBase):
         # Init command mutex
         self._cmd_mutex = asyncio.Lock()
 
-        dev = usb.core.find(idVendor=Ftdi.DEFAULT_VENDOR, idProduct=0x90d9)
+
+        usb_vendor = kwargs.get("usb_vendor")
+        usb_model = kwargs.get("usb_model")
+        usb_serial_short = kwargs.get("usb_serial_short")
+
+        # ConnectorSerialLowUsb.log.error("pooook")
+        # print(usb_vendor, usb_model, usb_serial_short)
+        
+        dev = None
+        devs = usb.core.find(idVendor=usb_vendor, idProduct=usb_model, find_all=True)
+        for dev in devs:
+            if dev.serial_number == usb_serial_short:
+                dev = dev
+        
+
         if dev is None:
             raise ValueError('Device not found')
-        print(dev)
+        # print(dev)
         dev.reset()
         dev.set_configuration()
-
-        # Must be found through dev
-        self.packet_size = 32
 
         cfg = dev.get_active_configuration()
         intf = cfg[(0,0)]
@@ -111,7 +123,7 @@ class ConnectorSerialLowUsb(ConnectorSerialBase):
             lambda e: \
                 usb.util.endpoint_direction(e.bEndpointAddress) == \
                 usb.util.ENDPOINT_OUT)
-
+        
         self.ep_in = usb.util.find_descriptor(
             intf,
             # match the first OUT endpoint
@@ -131,7 +143,7 @@ class ConnectorSerialLowUsb(ConnectorSerialBase):
         """Read from UART using asynchronous mode
         """
         async with self._mutex:
-            data_array_b = self.ep_in.read(self.packet_size)
+            data_array_b = self.ep_in.read(self.ep_in.wMaxPacketSize)
             bytes_object = data_array_b.tobytes()
             return bytes_object
 
@@ -145,7 +157,7 @@ class ConnectorSerialLowUsb(ConnectorSerialBase):
             try:
                 # write the data
                 cmd = message.encode()
-                packet_to_send = cmd + b'\x00' * (self.packet_size - len(cmd))
+                packet_to_send = cmd + b'\x00' * (self.ep_out.wMaxPacketSize - len(cmd))
                 self.ep_out.write(packet_to_send)
 
             except Exception as e:

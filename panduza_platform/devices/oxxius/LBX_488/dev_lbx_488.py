@@ -1,9 +1,7 @@
 import asyncio
 from core.platform_device import PlatformDevice
-
-
 from pathlib import Path
-# from ThorlabsPM100 import ThorlabsPM100, USBTMC
+
 import os
 
 import usb
@@ -11,14 +9,10 @@ import usb
 
 from pyftdi.ftdi import Ftdi
 
-
 import usb.core
 import usb.util
 
-# from connectors.utils.usbtmc import HuntUsbtmcDevs
-# from connectors.udev_tty import HuntUsbDevs
-
-# from .itf_PM100A_powermeter import InterfaceThorlabsPM100APowermeter
+from .itf_lbx_488_blc import InterfaceLbx488Blc
 
 class DeviceOxxiusLbx488(PlatformDevice):
     """
@@ -56,67 +50,63 @@ class DeviceOxxiusLbx488(PlatformDevice):
             Ftdi.add_custom_product(Ftdi.DEFAULT_VENDOR, 0x90d9)
             Ftdi.show_devices()
             
-        #     print("poooo")
-        #     print(devices)
-        #     # print("==")
-        #     # print(devices[0])
-        #     # dev = devices[0]
-        #     # available_functions = dir(dev[0])
-        #     # print(available_functions)
-
-        #     # [(UsbDeviceDescriptor(vid=1027, pid=37081, bus=3, address=3, sn='las-05013', index=None, description='LaserBoxx'), 1)]
+            usb_matches = Ftdi.list_devices()
+            print(usb_matches)
             
-        #     dev_test = Ftdi()
-        #     # dev_test.open_from_url("ftdi://ftdi:0x90d9:las-05013/1")
+            for usb_match in usb_matches:
+                
+                match = usb_match[0]
+                
+                if match.pid == 0x90d9:
+                    # print('------', match)
+                    # devlink = match.get('DEVLINKS', None)
+                    # if devlink:
+                    # print(f"pooookkkkk1 {devlink}")
+
+                    ma = self._PZA_DEV_config()["manufacturer"]
+                    mo = self._PZA_DEV_config()["model"]
+                    ref = f"{ma}.{mo}"
+                    bag.append({
+                        "ref": ref,
+                        "settings": {
+                            # "usb_vendor": match.idVendor,
+                            # "usb_model": match.idProduct,
+                            "usb_serial_short": match.sn
+                        }
+                    })
+
+        except Exception as e:
+            print("errororoorroorororo")
+            print(e)
             
             
-        #     # devices = usb.core.find(find_all=True)
-            dev = usb.core.find(idVendor=Ftdi.DEFAULT_VENDOR, idProduct=0x90d9)
-            if dev is None:
-                raise ValueError('Device not found')
-            print(dev)
-            dev.reset()
-            dev.set_configuration()
-            print("set conf")
             
-            cfg = dev.get_active_configuration()
-            intf = cfg[(0,0)]
-            print(intf)
+
+    
             
-            ep = usb.util.find_descriptor(
-                intf,
-                # match the first OUT endpoint
-                custom_match = \
-                lambda e: \
-                    usb.util.endpoint_direction(e.bEndpointAddress) == \
-                    usb.util.ENDPOINT_OUT)
-
-            assert ep is not None
-
+            # # write the data
             
-            # write the data
-            
-            patcket_sizeee = 32
-            cmd = b"?SV"
-            packet_to_send = cmd + b'\x00' * (patcket_sizeee - len(cmd))
-            # packet_to_send = cmd
-            ep.write(packet_to_send)
+            # patcket_sizeee = 32
+            # cmd = b"?SV"
+            # packet_to_send = cmd + b'\x00' * (patcket_sizeee - len(cmd))
+            # # packet_to_send = cmd
+            # ep.write(packet_to_send)
 
 
-            ep_in = usb.util.find_descriptor(
-                intf,
-                # match the first OUT endpoint
-                custom_match = \
-                lambda e: \
-                    usb.util.endpoint_direction(e.bEndpointAddress) == \
-                    usb.util.ENDPOINT_IN)
+            # ep_in = usb.util.find_descriptor(
+            #     intf,
+            #     # match the first OUT endpoint
+            #     custom_match = \
+            #     lambda e: \
+            #         usb.util.endpoint_direction(e.bEndpointAddress) == \
+            #         usb.util.ENDPOINT_IN)
 
 
 
-            data_array_b = ep_in.read(patcket_sizeee)
-            print(data_array_b)
-            bytes_object = data_array_b.tobytes()
-            print(bytes_object)
+            # data_array_b = ep_in.read(patcket_sizeee)
+            # print(data_array_b)
+            # bytes_object = data_array_b.tobytes()
+            # print(bytes_object)
             
             # data = ep_in.read(1)
             # print(data)
@@ -143,34 +133,11 @@ class DeviceOxxiusLbx488(PlatformDevice):
         #     #     print("Endpoint Direction: {}".format(endpoint.direction))
             
     
-        except Exception as e:
-            print("errororoorroorororo")
-            print(e)
-
-
-        # try:
-        #     matches = HuntUsbtmcDevs(0x1313, 0x8079)
-        #     for match in matches:
-        #         # print('------', match)
-        #         # devlink = match.get('DEVLINKS', None)
-        #         # if devlink:
-        #         # print(f"pooookkkkk1 {devlink}")
-        
-        #         ma = self._PZA_DEV_config()["manufacturer"]
-        #         mo = self._PZA_DEV_config()["model"]
-        #         ref = f"{ma}.{mo}"
-        #         bag.append({
-        #             "ref": ref,
-        #             "settings": {
-        #                 # "usb_vendor": match.idVendor,
-        #                 # "usb_model": match.idProduct,
-        #                 "usb_serial_short": match.serial_number
-        #             }
-        #         })
-        
         # except Exception as e:
         #     print("errororoorroorororo")
         #     print(e)
+
+
 
 
         return bag
@@ -188,17 +155,17 @@ class DeviceOxxiusLbx488(PlatformDevice):
         # if ('usb_serial_short' not in settings) and ('serial_port_name' not in settings):
         #     raise Exception("At least one settings must be set")
 
-        # const_settings = {
-        #     "usb_vendor": 0x1313,
-        #     "usb_model": 0x8079,
-        # }
-        # settings.update(const_settings)
+        const_settings = {
+            "usb_vendor": Ftdi.DEFAULT_VENDOR,
+            "usb_model": 0x90d9, # for the laser oxxius
+        }
+        settings.update(const_settings)
 
         # self.log.info(f"=> {settings}")
 
-        # self.mount_interface(
-        #     InterfaceThorlabsPM100APowermeter(name=f"powermeter", settings=settings)
-        # )
+        self.mount_interface(
+            InterfaceLbx488Blc(name=f"blc", settings=settings)
+        )
 
 
 
