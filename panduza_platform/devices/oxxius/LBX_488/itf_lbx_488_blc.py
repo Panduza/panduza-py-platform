@@ -28,10 +28,15 @@ class InterfaceLbx488Blc(MetaDriverBlc):
         
         self.usb_conn = await ConnectorSerialLowUsb.Get(**self.settings)
         
-        await self.usb_conn.write("?SV")
-        data = await  self.usb_conn.read()
-        print("=========")
-        print(data)
+        
+        await self.__debug_print_all_registers()
+        # data = await self.usb_conn.write_and_read("?SV")
+        # print(data)
+        # data = await self.usb_conn.write_and_read("?SV")
+        # print(data)
+        
+        # ?ACC (current constant)
+        # ?APC (power constant)
         
         self.__fakes = {
             "mode": {
@@ -62,9 +67,20 @@ class InterfaceLbx488Blc(MetaDriverBlc):
 
     ###########################################################################
 
-
     async def _PZA_DRV_BLC_read_mode_value(self):
-        return self.__fakes["mode"]["value"]
+        """
+        """
+        ACC = await self.usb_conn.write_and_read("?ACC")
+        print(ACC.decode())
+        # print(int(ACC.decode().strip()))
+        if ACC == 1:
+            return "constant_current"
+        APC = await self.usb_conn.write_and_read("?APC")
+        if APC == 1:
+            return "constant_power"
+        
+        return "no_regulation"
+        
 
 
     async def _PZA_DRV_BLC_write_mode_value(self, v):
@@ -72,9 +88,12 @@ class InterfaceLbx488Blc(MetaDriverBlc):
         self.__fakes["mode"]["value"] = v
 
 
-    async def _PZA_DRV_BLC_read_enable_value(self):
-        # self.log.debug(f"read enable !")
-        return self.__fakes["enable"]["value"]
+    async def _PZA_DRV_BLC_read_enable_value(self):        
+        EMISSION = await self.usb_conn.write_and_read("?L")
+        if EMISSION == 1:
+            return True
+        else:
+            return False
 
     # ---
 
@@ -133,4 +152,18 @@ class InterfaceLbx488Blc(MetaDriverBlc):
 
     async def _PZA_DRV_BLC_read_current_decimals(self):
         return self.__fakes["current"]["decimals"]
+
+    ###########################################################################
+
+    async def __debug_print_all_registers(self):
+        """Print all read registers
+        """
+        cmds = [
+            "?SV", "?ACC", "?APC", "?BT", "?C", "?CDRH", "?CW", 
+            "?DST", "?DT", "?F", "?HH", "?HID", "?INT", "?IV", "?L", 
+            "?MAXLC", "?MAXLP", "?P", "?PST", "?SC", "?SP", "?STA",
+            "?T"
+        ]
+        for cmd_str in cmds:    
+            print(cmd_str, " = ", await self.usb_conn.write_and_read(cmd_str) )
 

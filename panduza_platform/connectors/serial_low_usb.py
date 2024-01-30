@@ -163,3 +163,20 @@ class ConnectorSerialLowUsb(ConnectorSerialBase):
             except Exception as e:
                 raise Exception('Error during writing to uart').with_traceback(e.__traceback__)
 
+
+    async def write_and_read(self, message, time_lock_s=None, n_bytes = None):
+        """Read from UART using asynchronous mode
+        """
+        async with self._mutex:
+            try:
+                # write the data
+                cmd = message.encode()
+                packet_to_send = cmd + b'\x00' * (self.ep_out.wMaxPacketSize - len(cmd))
+                self.ep_out.write(packet_to_send)
+
+                # Read
+                data_array_b = self.ep_in.read(self.ep_in.wMaxPacketSize)
+                bytes_object = data_array_b.tobytes()
+                return bytes_object
+            except Exception as e:
+                raise Exception('Error during writing to uart').with_traceback(e.__traceback__)
