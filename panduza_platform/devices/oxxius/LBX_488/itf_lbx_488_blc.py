@@ -71,26 +71,30 @@ class InterfaceLbx488Blc(MetaDriverBlc):
         """
         """
         ACC = await self.usb_conn.write_and_read("?ACC")
-        print(ACC.decode())
-        # print(int(ACC.decode().strip()))
-        if ACC == 1:
+        if ACC == b'1\x00':
             return "constant_current"
+
         APC = await self.usb_conn.write_and_read("?APC")
-        if APC == 1:
+        if APC == b'1\x00':
             return "constant_power"
-        
+
         return "no_regulation"
-        
 
 
     async def _PZA_DRV_BLC_write_mode_value(self, v):
         self.log.info(f"write enable : {v}")
         self.__fakes["mode"]["value"] = v
 
+    # =============================================================================
+    # **** ENABLE/VALUE ****
 
-    async def _PZA_DRV_BLC_read_enable_value(self):        
+    # ---
+
+    async def _PZA_DRV_BLC_read_enable_value(self):
+        """Read emission status and convert to bool
+        """
         EMISSION = await self.usb_conn.write_and_read("?L")
-        if EMISSION == 1:
+        if EMISSION == b'1\x00':
             return True
         else:
             return False
@@ -99,7 +103,13 @@ class InterfaceLbx488Blc(MetaDriverBlc):
 
     async def _PZA_DRV_BLC_write_enable_value(self, v):
         self.log.info(f"write enable : {v}")
-        self.__fakes["enable"]["value"] = v
+        int_value = 0 # off by default
+        if v:
+            int_value = 1
+        status = await self.usb_conn.write_and_read(f"L {int_value}")
+        self.log.info(f"status={status}")
+
+    # ---
 
     ###########################################################################
 
