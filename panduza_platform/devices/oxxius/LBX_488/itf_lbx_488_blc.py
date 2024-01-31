@@ -24,6 +24,15 @@ class InterfaceLbx488Blc(MetaDriverBlc):
     def mA_to_A(self, ma_value):
         return (ma_value * 0.001)
 
+    def A_to_mA(self, ma_value):
+        return (ma_value * 1000)
+
+    def mW_to_W(self, ma_value):
+        return (ma_value * 0.001)
+
+    def W_to_mW(self, ma_value):
+        return (ma_value * 1000)
+
     # =============================================================================
     # FROM MetaDriverBlc
 
@@ -43,28 +52,35 @@ class InterfaceLbx488Blc(MetaDriverBlc):
         # Although the setting of “100%” is designed to drive the LBX at nominal power at the beginning of the
         # unit’s lifespan, the user is allowed to set this current up to 125% of the nominal current in order to
         # cope for a potential loss of efficiency due to aging
+        current_save = self.msg_to_float(await self.usb_conn.write_and_read("?SC"))
+        current_save = int(current_save)
         await self.usb_conn.write_and_read("CM 125")
         current_max = self.msg_to_float(await self.usb_conn.write_and_read("?SC"))
         self.min_max_current={
             "min": 0,
             "max": self.mA_to_A(current_max)
         }
+        await self.usb_conn.write_and_read(f"CM {current_save}") # restore previous value
         # print(self.min_max_current)
 
+        # Get min and max value for power set point
+        power_max = self.msg_to_float(await self.usb_conn.write_and_read("?MAXLP"))
+        self.min_max_power={
+            "min": 0,
+            "max": self.mW_to_W(power_max)
+        }
 
-        print(await self.usb_conn.write_and_read("CM 10"))
-        print(await self.usb_conn.write_and_read("?SC"))
-        print(await self.usb_conn.write_and_read("PM 200"))
-        print(await self.usb_conn.write_and_read("PM 5"))
+
+
         await self.__debug_print_all_registers()
         # data = await self.usb_conn.write_and_read("?SV")
         # print(data)
         # data = await self.usb_conn.write_and_read("?SV")
         # print(data)
-        
+
         # ?ACC (current constant)
         # ?APC (power constant)
-        
+
         self.__fakes = {
             "mode": {
                 "value": "constant_power"
@@ -117,7 +133,12 @@ class InterfaceLbx488Blc(MetaDriverBlc):
         """
         """
         self.log.info(f"write enable : {v}")
-        self.__fakes["mode"]["value"] = v
+        if v == "constant_current":
+            await self.usb_conn.write_and_read("ACC 1")
+        if v == "constant_power":
+            await self.usb_conn.write_and_read("APC 1")
+
+        await self.__debug_print_all_registers()
 
     # ---
 
@@ -150,23 +171,22 @@ class InterfaceLbx488Blc(MetaDriverBlc):
     ###########################################################################
 
     async def _PZA_DRV_BLC_read_power_value(self):
-        # self.log.debug(f"read power value !")
-        return self.__fakes["power"]["value"]
+        c = self.msg_to_float(await self.usb_conn.write_and_read(f"?SP"))
+        print(c)
+        print(self.mW_to_W(c))
+        return self.mW_to_W(c)
 
     # ---
 
     async def _PZA_DRV_BLC_write_power_value(self, v):
         self.log.info(f"write power : {v}")
-        self.__fakes["power"]["value"] = v
-        self.__fakes["power"]["real"] = v
-    
+        val_mW = self.W_to_mW(v)
+        await self.usb_conn.write_and_read(f"PM {val_mW}")
+
     # ---
 
     async def _PZA_DRV_BLC_power_value_min_max(self):
-        return {
-            "min": self.__fakes["power"]["min"],
-            "max": self.__fakes["power"]["max"] 
-        }
+        return self.min_max_power
 
     # ---
 
@@ -178,15 +198,15 @@ class InterfaceLbx488Blc(MetaDriverBlc):
     # **** DEBUG ****
 
     async def _PZA_DRV_BLC_read_current_value(self):
-        # self.log.debug(f"read current value !")
-        return self.__fakes["current"]["value"]
+        c = self.msg_to_float(await self.usb_conn.write_and_read(f"?SC"))
+        return self.mA_to_A(c)
 
     # ---
 
     async def _PZA_DRV_BLC_write_current_value(self, v):
         self.log.info(f"write current : {v}")
-        self.__fakes["current"]["value"] = v
-        self.__fakes["current"]["real"] = v
+        val_mA = self.A_to_mA(v)
+        await self.usb_conn.write_and_read(f"CM {val_mA}")
 
     # ---
 
