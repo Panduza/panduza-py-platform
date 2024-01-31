@@ -4,6 +4,8 @@ from meta_drivers.blc import MetaDriverBlc
 
 from connectors.serial_low_usb import ConnectorSerialLowUsb
 
+
+
 class InterfaceLbx488Blc(MetaDriverBlc):
     """Fake BLC driver
     """
@@ -16,6 +18,12 @@ class InterfaceLbx488Blc(MetaDriverBlc):
         self.settings = settings
         super().__init__(name=name)
 
+    def msg_to_float(self, bytes_value):
+        return float(bytes_value[:-1])
+
+    def mA_to_A(self, ma_value):
+        return (ma_value * 0.001)
+
     # =============================================================================
     # FROM MetaDriverBlc
 
@@ -25,10 +33,29 @@ class InterfaceLbx488Blc(MetaDriverBlc):
         """Init function
         Reset fake parameters
         """
-        
+
         self.usb_conn = await ConnectorSerialLowUsb.Get(**self.settings)
-        
-        
+
+
+        # Get min and max value for current set point
+        # When setting the current, the unit used is the percentage of the nominal current. When reading the
+        # current, the returned value is expressed in milliAmperes.
+        # Although the setting of “100%” is designed to drive the LBX at nominal power at the beginning of the
+        # unit’s lifespan, the user is allowed to set this current up to 125% of the nominal current in order to
+        # cope for a potential loss of efficiency due to aging
+        await self.usb_conn.write_and_read("CM 125")
+        current_max = self.msg_to_float(await self.usb_conn.write_and_read("?SC"))
+        self.min_max_current={
+            "min": 0,
+            "max": self.mA_to_A(current_max)
+        }
+        # print(self.min_max_current)
+
+
+        print(await self.usb_conn.write_and_read("CM 10"))
+        print(await self.usb_conn.write_and_read("?SC"))
+        print(await self.usb_conn.write_and_read("PM 200"))
+        print(await self.usb_conn.write_and_read("PM 5"))
         await self.__debug_print_all_registers()
         # data = await self.usb_conn.write_and_read("?SV")
         # print(data)
@@ -65,7 +92,11 @@ class InterfaceLbx488Blc(MetaDriverBlc):
         # Call meta class BLC ini
         await super()._PZA_DRV_loop_init()
 
-    ###########################################################################
+
+    # =============================================================================
+    # **** MODE/VALUE ****
+
+    # ---
 
     async def _PZA_DRV_BLC_read_mode_value(self):
         """
@@ -80,10 +111,15 @@ class InterfaceLbx488Blc(MetaDriverBlc):
 
         return "no_regulation"
 
+    # ---
 
     async def _PZA_DRV_BLC_write_mode_value(self, v):
+        """
+        """
         self.log.info(f"write enable : {v}")
         self.__fakes["mode"]["value"] = v
+
+    # ---
 
     # =============================================================================
     # **** ENABLE/VALUE ****
@@ -137,7 +173,9 @@ class InterfaceLbx488Blc(MetaDriverBlc):
     async def _PZA_DRV_BLC_read_power_decimals(self):
         return self.__fakes["power"]["decimals"]
 
-    ###########################################################################
+
+    # =============================================================================
+    # **** DEBUG ****
 
     async def _PZA_DRV_BLC_read_current_value(self):
         # self.log.debug(f"read current value !")
@@ -153,17 +191,17 @@ class InterfaceLbx488Blc(MetaDriverBlc):
     # ---
 
     async def _PZA_DRV_BLC_current_value_min_max(self):
-        return {
-            "min": self.__fakes["current"]["min"],
-            "max": self.__fakes["current"]["max"] 
-        }
+        return self.min_max_current
 
     # ---
 
     async def _PZA_DRV_BLC_read_current_decimals(self):
         return self.__fakes["current"]["decimals"]
 
-    ###########################################################################
+    # ---
+
+    # =============================================================================
+    # **** DEBUG ****
 
     async def __debug_print_all_registers(self):
         """Print all read registers
