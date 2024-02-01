@@ -22,13 +22,13 @@ class InterfaceLbx488Blc(MetaDriverBlc):
         return float(bytes_value[:-1])
 
     def mA_to_A(self, ma_value):
-        return (ma_value * 0.001)
+        return round((ma_value * 0.001), 3)
 
     def A_to_mA(self, ma_value):
         return (ma_value * 1000)
 
     def mW_to_W(self, ma_value):
-        return (ma_value * 0.001)
+        return round((ma_value * 0.001), 3)
 
     def W_to_mW(self, ma_value):
         return (ma_value * 1000)
@@ -78,32 +78,6 @@ class InterfaceLbx488Blc(MetaDriverBlc):
         # data = await self.usb_conn.write_and_read("?SV")
         # print(data)
 
-        # ?ACC (current constant)
-        # ?APC (power constant)
-
-        self.__fakes = {
-            "mode": {
-                "value": "constant_power"
-            },
-            "enable": {
-                "value": False
-            },
-            "power": {
-                "value": 0,
-                "min": -1000,
-                "max":  1000,
-                "decimals": 2
-            },
-            "current": {
-                "value":  0,
-                "min":   0,
-                "max":  50,
-                "decimals": 3
-            },
-            "misc": {
-                "model": "DEATHSTAR (Panduza Fake Laser Control)"
-            }
-        }
 
         # Call meta class BLC ini
         await super()._PZA_DRV_loop_init()
@@ -191,7 +165,7 @@ class InterfaceLbx488Blc(MetaDriverBlc):
     # ---
 
     async def _PZA_DRV_BLC_read_power_decimals(self):
-        return self.__fakes["power"]["decimals"]
+        return 3
 
 
     # =============================================================================
@@ -216,7 +190,7 @@ class InterfaceLbx488Blc(MetaDriverBlc):
     # ---
 
     async def _PZA_DRV_BLC_read_current_decimals(self):
-        return self.__fakes["current"]["decimals"]
+        return 3
 
     # ---
 
