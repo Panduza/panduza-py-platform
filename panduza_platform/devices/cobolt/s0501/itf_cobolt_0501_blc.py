@@ -9,13 +9,16 @@ COMMAND_TIME_LOCK=1
 def cmd(cmd):
     """Append the correct command termination to the command
     """
-    termination = "\n\r"
+    termination = "\r" # only one "\r" is OK, do not use "\n"
     return (cmd + termination)
 
 ### Interface Definition
 
 class InterfaceCobolt0501Blc(MetaDriverBlc):
     """
+    
+    https://github.com/cobolt-lasers/pycobolt
+    
     """
 
     # ---
@@ -49,6 +52,19 @@ class InterfaceCobolt0501Blc(MetaDriverBlc):
         
         self.serial_connector = await ConnectorSerialTty.Get(**self.settings)
 
+        print("clear", await self.serial_connector.write_and_read_until(cmd(""), expected=b"\n"))
+        print("clear", await self.serial_connector.write_and_read_until(cmd(""), expected=b"\n"))
+        print("clear", await self.serial_connector.write_and_read_until(cmd(""), expected=b"\n"))
+        print("l?", await self.serial_connector.write_and_read_until(cmd("l?"), expected=b"\n"))
+        print("l0", await self.serial_connector.write_and_read_until(cmd("l0"), expected=b"\n"))
+
+        print("slc", )
+        # print("slc?", await self.serial_connector.write_and_read_until(cmd("slc?"), expected=b"\n"))
+        print("i?", await self.serial_connector.write_and_read_until(cmd("i?"), expected=b"\n"))
+
+
+        
+
         # command = "sn?"
         # termination = "\n\r"
         # cmd = (command + termination)
@@ -64,7 +80,7 @@ class InterfaceCobolt0501Blc(MetaDriverBlc):
         # print(f"leds {leds}")
 
 
-        self.__debug_print_all_registers()
+        await self.__debug_print_all_registers()
 
         self.__fakes = {
             "enable": {
@@ -97,13 +113,30 @@ class InterfaceCobolt0501Blc(MetaDriverBlc):
     async def _PZA_DRV_BLC_read_mode_value(self):
         """Must get the mode value on the BPC and return it
         """
-        raise NotImplementedError("Must be implemented !")
+        mode_b = await self.serial_connector.write_and_read_until(cmd("gam?"), expected=b"\n")
+        print(f"mode {mode_b}")
+        mode_i = int(mode_b.decode('utf-8').rstrip())
+        print(f"mode {mode_i}")
+        
+        if mode_i == 0:
+            return "constant_current"
+        if mode_i == 1:
+            return "constant_power"
+        # if mode_i == 2:
+        #     return "modulation"
+
+        return "no_regulation"
+
 
     async def _PZA_DRV_BLC_write_mode_value(self, v):
         """Must set *v* as the new mode value on the BPC
         """
-        raise NotImplementedError("Must be implemented !")
+        self.log.info(f"write enable : {v}")
+        if v == "constant_current":
+            await self.serial_connector.write_and_read_until(cmd("ci"), expected=b"\n")
 
+        if v == "constant_power":
+            await self.serial_connector.write_and_read_until(cmd("cp"), expected=b"\n")
 
     # ---
 
@@ -130,54 +163,57 @@ class InterfaceCobolt0501Blc(MetaDriverBlc):
     ###########################################################################
 
     async def _PZA_DRV_BLC_read_power_value(self):
-        # self.log.debug(f"read power value !")
-        return self.__fakes["power"]["value"]
+        power_b = await self.serial_connector.write_and_read_until(cmd(f"p?"), expected=b"\n")
+        power_f = float(power_b.decode('utf-8').rstrip())
+        return power_f
 
     # ---
 
     async def _PZA_DRV_BLC_write_power_value(self, v):
         self.log.info(f"write power : {v}")
-        self.__fakes["power"]["value"] = v
-        self.__fakes["power"]["real"] = v
-    
+        await self.serial_connector.write_and_read_until(cmd(f"p {v}"), expected=b"\n")
+
     # ---
 
     async def _PZA_DRV_BLC_power_value_min_max(self):
         return {
-            "min": self.__fakes["power"]["min"],
-            "max": self.__fakes["power"]["max"] 
+            "min": 0,
+            "max": 0.3
         }
 
     # ---
 
     async def _PZA_DRV_BLC_read_power_decimals(self):
-        return self.__fakes["power"]["decimals"]
+        return 3
 
     ###########################################################################
 
+    # ---
+
     async def _PZA_DRV_BLC_read_current_value(self):
-        # self.log.debug(f"read current value !")
-        return self.__fakes["current"]["value"]
+        current_b = await self.serial_connector.write_and_read_until(cmd(f"glc?"), expected=b"\n")
+        current_f = float(current_b.decode('utf-8').rstrip())
+        self.log.debug(f"read current : {current_f}")
+        return current_f
 
     # ---
 
     async def _PZA_DRV_BLC_write_current_value(self, v):
         self.log.info(f"write current : {v}")
-        self.__fakes["current"]["value"] = v
-        self.__fakes["current"]["real"] = v
+        await self.serial_connector.write_and_read_until(cmd(f"slc {v}"), expected=b"\n")
 
     # ---
 
     async def _PZA_DRV_BLC_current_value_min_max(self):
         return {
-            "min": self.__fakes["current"]["min"],
-            "max": self.__fakes["current"]["max"] 
+            "min": 0,
+            "max": 0.5
         }
 
     # ---
 
     async def _PZA_DRV_BLC_read_current_decimals(self):
-        return self.__fakes["current"]["decimals"]
+        return 3
 
 
     ###########################################################################
@@ -185,24 +221,10 @@ class InterfaceCobolt0501Blc(MetaDriverBlc):
     async def __debug_print_all_registers(self):
         """Print all read registers
         """
-        cmd_str = "l?"
-        print(cmd_str, " = ", await self.serial_connector.write(cmd(cmd_str), expected=b"\n") )
-        cmd_str = "p?"
-        print(cmd_str, " = ", await self.serial_connector.write(cmd(cmd_str), expected=b"\n") )
-        cmd_str = "pa?"
-        print(cmd_str, " = ", await self.serial_connector.write(cmd(cmd_str), expected=b"\n") )
-        cmd_str = "i?"
-        print(cmd_str, " = ", await self.serial_connector.write(cmd(cmd_str), expected=b"\n") )
-        cmd_str = "ilk?"
-        print(cmd_str, " = ", await self.serial_connector.write(cmd(cmd_str), expected=b"\n") )
-        cmd_str = "leds?"
-        print(cmd_str, " = ", await self.serial_connector.write(cmd(cmd_str), expected=b"\n") )
-        cmd_str = "f?"
-        print(cmd_str, " = ", await self.serial_connector.write(cmd(cmd_str), expected=b"\n") )
-        cmd_str = "sn?"
-        print(cmd_str, " = ", await self.serial_connector.write(cmd(cmd_str), expected=b"\n") )
-        cmd_str = "hrs?"
-        print(cmd_str, " = ", await self.serial_connector.write(cmd(cmd_str), expected=b"\n") )
-
+        cmds = [
+            "l?", "p?", "pa?", "i?", "ilk?", "leds?", "f?", "sn?", "hrs?", "glm?", "glc?"
+        ]
+        for cmd_str in cmds:
+            print(cmd_str, " = ", await self.serial_connector.write_and_read_until(cmd(cmd_str), expected=b"\n") )
 
 
