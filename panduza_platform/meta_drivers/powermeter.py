@@ -34,7 +34,7 @@ class MetaDriverPowermeter(PlatformDriver):
         }
 
         # 
-        self.__polling_cycle = 1
+        self.__acquisition_frequency = 1
 
         # first update
         await self.__update_attribute_initial()
@@ -66,6 +66,13 @@ class MetaDriverPowermeter(PlatformDriver):
         function_name = inspect.stack()[0][3]
         raise NotImplementedError(f"Function not implemented ! '{function_name}' => %{file_name}%")
 
+    # ---
+
+    async def _PZA_DRV_POWERMETER_read_measure_decimals(self):
+        """
+        """
+        return 3
+
     # =============================================================================
     # PRIVATE FUNCTIONS
 
@@ -75,7 +82,7 @@ class MetaDriverPowermeter(PlatformDriver):
         """Task to poll the value
         """
         while self.alive:
-            await asyncio.sleep(self.__polling_cycle)
+            await asyncio.sleep(self.__acquisition_frequency)
             await self._update_attributes_from_dict({
                 "measure": {
                     "value": await self._PZA_DRV_POWERMETER_read_measure_value()
@@ -97,20 +104,20 @@ class MetaDriverPowermeter(PlatformDriver):
         update_obj = {}
         await self._prepare_update(update_obj, 
                             "measure", cmd_att,
-                            "polling_cycle", [float, int]
-                            , self.__set_poll_cycle
-                            , self.__get_poll_cycle)
+                            "frequency", [float, int]
+                            , self.__set_acquisition_frequency
+                            , self.__get_acquisition_frequency)
         await self._update_attributes_from_dict(update_obj)
 
     # ---
 
-    async def __set_poll_cycle(self, v):
-        self.__polling_cycle = v
+    async def __set_acquisition_frequency(self, v):
+        self.__acquisition_frequency = v
 
     # ---
 
-    async def __get_poll_cycle(self):
-        return self.__polling_cycle
+    async def __get_acquisition_frequency(self):
+        return self.__acquisition_frequency
 
     # ---
 
@@ -120,7 +127,8 @@ class MetaDriverPowermeter(PlatformDriver):
         await self._update_attributes_from_dict({
             "measure": {
                 "value": await self._PZA_DRV_POWERMETER_read_measure_value(),
-                "polling_cycle": await self.__get_poll_cycle()
+                "decimals": await self._PZA_DRV_POWERMETER_read_measure_decimals(),
+                "frequency": await self.__get_acquisition_frequency()
             }
         })
 
