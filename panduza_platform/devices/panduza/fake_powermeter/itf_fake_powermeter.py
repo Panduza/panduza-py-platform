@@ -22,7 +22,8 @@ class InterfacePanduzaFakePowermeter(MetaDriverPowermeter):
         
         self.platform.load_task(self.__increment_task())
 
-
+        
+        self.__decimals = 3
         self.__fakes = {
             "measure": {
                 "value": 0
@@ -36,6 +37,11 @@ class InterfacePanduzaFakePowermeter(MetaDriverPowermeter):
 
     async def _PZA_DRV_POWERMETER_read_measure_value(self):
         return self.__fakes["measure"]["value"]
+
+    # ---
+
+    async def _PZA_DRV_POWERMETER_read_measure_decimals(self):
+        return self.__decimals
 
     # ---
 
