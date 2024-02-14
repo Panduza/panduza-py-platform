@@ -145,8 +145,10 @@ class InterfaceCobolt0501Blc(MetaDriverBlc):
         """
         # 0 = OFF
         # 1 = ON
-        value = await self.serial_connector.write_and_read_until(cmd("l?"), expected=b"\n")
-        return bool(value)
+        value_b = await self.serial_connector.write_and_read_until(cmd("l?"), expected=b"\n")
+        value_i = int(value_b.decode('utf-8').rstrip())
+        self.log.info(f"read enable value : {value_i} | {bool(value_i)}")
+        return bool(value_i)
 
     # ---
 
@@ -156,7 +158,8 @@ class InterfaceCobolt0501Blc(MetaDriverBlc):
         val_int = 0
         if v:
             val_int = 1
-        await self.serial_connector.write(cmd(f"l{val_int}"), expected=b"\n")
+        self.log.info(f"write enable value : {val_int}")
+        await self.serial_connector.write_and_read_until(cmd(f"l{val_int}"), expected=b"\n")
 
     # ---
 
@@ -213,7 +216,7 @@ class InterfaceCobolt0501Blc(MetaDriverBlc):
     # ---
 
     async def _PZA_DRV_BLC_read_current_decimals(self):
-        return 3
+        return 1
 
 
     ###########################################################################
