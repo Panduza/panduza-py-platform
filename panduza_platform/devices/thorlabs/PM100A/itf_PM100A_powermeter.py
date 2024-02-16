@@ -34,3 +34,10 @@ class InterfaceThorlabsPM100APowermeter(MetaDriverPowermeter):
     async def _PZA_DRV_POWERMETER_read_measure_value(self):
         return self.conn.read()
 
+    # ---
+
+    async def _PZA_DRV_POWERMETER_read_measure_decimals(self):
+        """
+        """
+        return 5
+
