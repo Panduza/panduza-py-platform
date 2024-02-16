@@ -44,12 +44,16 @@ class DeviceOxxiusLbx488(PlatformDevice):
         # 0403:90d9 Future Technology Devices International, Ltd LaserBoxx
 
         try:
-
-
             # Get the list of available devices
             Ftdi.add_custom_product(Ftdi.DEFAULT_VENDOR, 0x90d9)
             Ftdi.show_devices()
-            
+        except Exception as e:
+            print(e)
+
+
+
+        try:
+
             usb_matches = Ftdi.list_devices()
             print(usb_matches)
             
