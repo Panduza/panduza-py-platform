@@ -1,4 +1,4 @@
-
+import asyncio
 from meta_drivers.blc import MetaDriverBlc
 from connectors.serial_tty import ConnectorSerialTty
 
@@ -160,6 +160,13 @@ class InterfaceCobolt0501Blc(MetaDriverBlc):
             val_int = 1
         self.log.info(f"write enable value : {val_int}")
         await self.serial_connector.write_and_read_until(cmd(f"l{val_int}"), expected=b"\n")
+
+        # Wait for it
+        value_i = 5
+        while(value_i != val_int):
+            value_b = await self.serial_connector.write_and_read_until(cmd("l?"), expected=b"\n")
+            value_i = int(value_b.decode('utf-8').rstrip())
+            # print(value_i)
 
     # ---
 

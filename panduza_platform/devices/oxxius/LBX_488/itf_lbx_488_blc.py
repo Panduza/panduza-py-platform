@@ -140,6 +140,11 @@ class InterfaceLbx488Blc(MetaDriverBlc):
         status = await self.usb_conn.write_and_read(f"L {int_value}")
         self.log.info(f"status={status}")
 
+        # Wait for it
+        value_i = None
+        while(value_i != v):
+            value_i = await self._PZA_DRV_BLC_read_enable_value()
+
     # ---
 
     ###########################################################################

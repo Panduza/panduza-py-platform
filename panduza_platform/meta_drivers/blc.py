@@ -239,11 +239,13 @@ class MetaDriverBlc(PlatformDriver):
         """Manage output enable commands
         """
         update_obj = {}
-        await self._prepare_update(update_obj, 
+
+        await self._prepare_update(update_obj,
                             "enable", cmd_att,
                             "value", [bool]
                             , self._PZA_DRV_BLC_write_enable_value
                             , self._PZA_DRV_BLC_read_enable_value)
+
         await self._prepare_update(update_obj, 
                             "enable", cmd_att,
                             "polling_cycle", [float, int]
