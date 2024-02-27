@@ -181,7 +181,15 @@ class InterfacePanduzaPlatform(PlatformDriver):
             if not has_next:
                 break
         self.hunting = False
-        await self._update_attribute("devices", "hunting", self.hunting)
+
+        await self._update_attributes_from_dict({
+                "devices": {
+                    "hunting": self.hunting,
+                    "max": self.platform.device_factory.get_number_of_drivers(),
+                    "hunted": 1,
+                    "store": self.platform.device_factory.get_devices_store(),
+                }
+            })
         print(f"!!!!!!!!!!!!!! HUNT !!!!!!!!!!!!!!!")
 
 

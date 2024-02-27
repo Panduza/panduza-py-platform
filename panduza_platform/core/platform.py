@@ -250,6 +250,9 @@ class Platform:
         # Internal store of the platform config
         self.dtree = new_dtree
 
+        with open('/etc/panduza/tree.json', 'w') as f:
+            json.dump(self.dtree, f)
+
     # ---
 
     async def handle_worker_panic(self, name, status):
