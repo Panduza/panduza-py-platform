@@ -1,4 +1,8 @@
-import pyudev
+from sys import platform
+
+if platform == "linux" or platform == "linux2":
+    import pyudev
+
 import logging
 
 # True to enable deep debug logs

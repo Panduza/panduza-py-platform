@@ -11,6 +11,8 @@ import socket
 
 import asyncio
 import aiofiles
+
+# this module is buggy on windows
 import aiomonitor
 
 
@@ -85,7 +87,8 @@ class Platform:
 
         # To enable or disable event loop monitoring
         # Should be false for release
-        self.event_loop_debug = True
+        # self.event_loop_debug = True
+        self.event_loop_debug = False
 
         # Mqtt Clients
         self.clients = {}

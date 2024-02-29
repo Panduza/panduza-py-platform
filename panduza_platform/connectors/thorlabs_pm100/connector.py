@@ -6,7 +6,12 @@ import os
 
 import concurrent.futures
 
-import pyudev
+from sys import platform
+
+if platform == "linux" or platform == "linux2":
+    import pyudev
+
+
 from log.driver import driver_logger
 
 # from .udev_tty import SerialPortFromUsbSetting
