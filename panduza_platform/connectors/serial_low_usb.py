@@ -7,7 +7,7 @@ import usb
 
 
 from .serial_base import ConnectorSerialBase
-from panduza_platform.log.driver import driver_logger
+from log.driver import driver_logger
 
 from .udev_tty import SerialPortFromUsbSetting
 
