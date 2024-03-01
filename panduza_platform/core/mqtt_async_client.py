@@ -274,6 +274,12 @@ class MqttAsyncClient(PlatformWorker):
         self.mqtt_client.on_socket_close = self.__on_socket_close
         self.mqtt_client.on_socket_register_write = self.__on_socket_register_write
         self.mqtt_client.on_socket_unregister_write = self.__on_socket_unregister_write
+
+
+        # self.mqtt_client.connect_async(self.addr, self.port, keepalive=60)
+        
+        # if server is not present this function block the all platform
+        # because of reconnect function inside
         self.mqtt_client.connect(self.addr, self.port, keepalive=60)
 
         # Go connecting state
@@ -285,6 +291,10 @@ class MqttAsyncClient(PlatformWorker):
     async def __state_connecting(self):
         """Running state
         """
+
+        # Connection timeout should be manage here...
+        # self.mqtt_client.reconnect()
+
         await asyncio.sleep(0.5)
 
     # ---

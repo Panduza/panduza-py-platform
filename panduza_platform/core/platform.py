@@ -15,7 +15,7 @@ import aiofiles
 # this module is buggy on windows
 import aiomonitor
 
-
+from pathlib import Path
 
 from sys import platform
 
@@ -302,6 +302,7 @@ class Platform:
 
             # Wait for ever
             while(self.alive):
+                # print("pok")
                 await asyncio.sleep(1)
 
         self.log.warning("END OF IDLE !")
@@ -346,6 +347,9 @@ class Platform:
             # Set the default tree path on linux
             if platform == "linux" or platform == "linux2":
                 self.dtree_filepath = f"{self.run_dir}/panduza/tree.json"
+            else:
+                self.dtree_filepath = os.path.join(Path.home(), "panduza", "tree.json")
+        print(self.dtree_filepath)
 
         # Control that the file exist
         new_dtree = {}
@@ -360,6 +364,8 @@ class Platform:
 
         # Load config
         await self.load_config_content_task(new_dtree)
+        
+        pass
 
     # ---
 
