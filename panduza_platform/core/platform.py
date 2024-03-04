@@ -28,6 +28,8 @@ from .platform_errors import InitializationError
 
 from .mqtt_async_client import MqttAsyncClient
 
+from .local_discovery_server import Server
+
 # from .platform_driver_factory import PlatformDriverFactory
 from .platform_device_factory import PlatformDeviceFactory
 
@@ -125,6 +127,16 @@ class Platform:
         """
         self.log.info(f"Load '{worker}'")
         self.load_task( worker.task(), name=f"WORKER>{worker.PZA_WORKER_name()}" )
+
+    # ---
+        
+    async def local_service_discovery(self):
+        """Start the discovery of local clients
+        """
+
+        transport, protocol = await self.event_loop.create_datagram_endpoint(
+            lambda: Server(),
+            local_addr=('0.0.0.0', 53035))
 
     # ---
 
@@ -281,6 +293,9 @@ class Platform:
 
         # Start the global task group
         async with asyncio.TaskGroup() as self.task_group:
+
+            # Connect the local discovery server
+            await self.local_service_discovery()
 
             # Connect to primary broker
             await self.mount_client("primary", "localhost", 1883)
